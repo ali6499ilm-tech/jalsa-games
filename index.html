@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="تطبيق جلسة للألعاب الجماعية من هاتف واحد. العب مع عائلتك وأصدقائك في التجمعات والجمعات مع باقة من أروع الألعاب كالجاسوس وقنبلة الكلمات وبدون كلام.">
+  <title>جلسة - ألعاب جماعية من هاتف واحد 🎮</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d0a1d">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+  <!-- Ambient background glow elements -->
+  <div class="ambient-light light-1"></div>
+  <div class="ambient-light light-2"></div>
+
+  <div class="app-container" id="app-container">
+
+    <!-- 1. HOME WELCOME SCREEN -->
+    <div class="screen active" id="screen-home">
+      <div class="game-card text-center animate-fade-in">
+        <div class="welcome-logo-box">
+          <div class="logo-glow-ring">
+            <span class="logo-icon">🎮</span>
+          </div>
+          <h1>جَلسَة</h1>
+          <p>ألعاب جماعية حماسية من هاتف واحد لتسلية جمعتكم وسهراتكم العائلية ومع الأصدقاء!</p>
+        </div>
+        
+        <div class="game-controls">
+          <button class="btn btn-primary btn-large" id="btn-start-app">
+            <span>ابدأ اللعب الآن 🚀</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. PLAYER HUB SCREEN -->
+    <div class="screen" id="screen-players">
+      <div class="game-card animate-fade-in">
+        <div class="game-header">
+          <span class="game-badge">المشاركون</span>
+          <h2>إضافة اللاعبين 👥</h2>
+        </div>
+
+        <div class="input-group-custom">
+          <input type="text" id="player-name-input" class="input-custom" placeholder="اكتب اسم اللاعب هنا..." maxlength="15">
+        </div>
+
+        <div class="avatar-color-selector">
+          <span class="selector-label">اختر الرمز التعبيري:</span>
+          <div class="emojis-grid" id="emojis-grid">
+            <!-- Rendered by JS -->
+          </div>
+          
+          <span class="selector-label" style="margin-top: 15px;">اختر اللون المميز:</span>
+          <div class="colors-grid" id="colors-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <button class="btn btn-accent btn-large" id="btn-add-player" style="margin-bottom: 20px;">
+          <span>إضافة لاعب جديد ➕</span>
+        </button>
+
+        <div class="added-players-box">
+          <div class="players-counter">
+            <span>اللاعبون المضافون:</span>
+            <span><strong id="players-count-val">0</strong> / 16</span>
+          </div>
+          <div class="players-list-container" id="players-list-container">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <div class="game-controls">
+          <button class="btn btn-outline" id="btn-back-home" style="flex: 1;">
+            <span>رجوع</span>
+          </button>
+          <button class="btn btn-primary" id="btn-go-games" style="flex: 2;">
+            <span>اختيار اللعبة ➡️</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. GAME SELECTOR SCREEN -->
+    <div class="screen" id="screen-games">
+      <div class="game-card animate-fade-in">
+        <div class="game-header">
+          <span class="game-badge">كتالوج الألعاب</span>
+          <h2>ماذا نلعب اليوم؟ 🎲</h2>
+        </div>
+
+        <div class="games-grid">
+          <!-- Game Card 1: Undercover -->
+          <div class="game-select-card" id="card-undercover">
+            <div class="game-card-icon-box" style="background: rgba(155, 81, 224, 0.1); color: var(--accent);">
+              <span>🕵️‍♂️</span>
+            </div>
+            <div class="game-select-info">
+              <h3>لعبة الجاسوس (Undercover)</h3>
+              <p>من هو الجاسوس المتخفي بيننا؟ اعثروا عليه قبل أن يخدع الجميع ويكتشف كلمتكم السرية!</p>
+              <span class="game-player-count-badge">3 - 12 لاعب</span>
+            </div>
+          </div>
+
+          <!-- Game Card 2: Word Bomb -->
+          <div class="game-select-card" id="card-bomb">
+            <div class="game-card-icon-box" style="background: rgba(255, 23, 68, 0.1); color: var(--danger);">
+              <span>💣</span>
+            </div>
+            <div class="game-select-info">
+              <h3>قنبلة الكلمات (Word Bomb)</h3>
+              <p>تكتكة متسارعة وقنبلة موقوتة في يدك! اذكر الكلمة الصحيحة ومرر الهاتف سريعاً قبل الانفجار.</p>
+              <span class="game-player-count-badge">3 - 16 لاعب</span>
+            </div>
+          </div>
+
+          <!-- Game Card 3: Charades -->
+          <div class="game-select-card" id="card-charades">
+            <div class="game-card-icon-box" style="background: rgba(0, 242, 254, 0.1); color: var(--primary);">
+              <span>🎭</span>
+            </div>
+            <div class="game-select-info">
+              <h3>بدون كلام (Charades)</h3>
+              <p>تقسموا لفريقين، ضع الهاتف على جبهتك ودع أصدقاءك يمثلون لك الكلمة لتخمنها وتكسب النقاط.</p>
+              <span class="game-player-count-badge">4 - 16 لاعب</span>
+            </div>
+          </div>
+
+          <!-- Game Card 4: Taboo -->
+          <div class="game-select-card" id="card-taboo">
+            <div class="game-card-icon-box" style="background: rgba(0, 230, 118, 0.1); color: #00e676;">
+              <span>🗣️</span>
+            </div>
+            <div class="game-select-info">
+              <h3>قول بس لا تقول (Taboo)</h3>
+              <p>تقسموا لفريقين! صف الكلمة المطلوبة لفريقك دون استخدام أي من الكلمات الخمسة المحظورة!</p>
+              <span class="game-player-count-badge">4 - 16 لاعب</span>
+            </div>
+          </div>
+
+          <!-- Game Card 5: Would You Rather -->
+          <div class="game-select-card" id="card-wyr">
+            <div class="game-card-icon-box" style="background: rgba(255, 112, 67, 0.1); color: #ff7043;">
+              <span>🤔</span>
+            </div>
+            <div class="game-select-info">
+              <h3>لو خيروك؟ (Would You Rather)</h3>
+              <p>خياران صعبان ومحرجان يُعرضان عليك! اختر إجابتك بحرية واكتشف هل توافق بقية اللاعبين؟</p>
+              <span class="game-player-count-badge">2 - 16 لاعب</span>
+            </div>
+          </div>
+
+          <!-- Game Card 6: Truth or Dare -->
+          <div class="game-select-card" id="card-tod">
+            <div class="game-card-icon-box" style="background: rgba(244, 143, 177, 0.1); color: #f48fb1;">
+              <span>🍾</span>
+            </div>
+            <div class="game-select-info">
+              <h3>صراحة أو تحدي (Truth or Dare)</h3>
+              <p>اختر الصراحة لتكشف أسرارك أو التحدي لتنفيذ مهام مجنونة ومضحكة أمام أصدقائك!</p>
+              <span class="game-player-count-badge">2 - 16 لاعب</span>
+            </div>
+          </div>
+
+          <!-- Game Card 7: 5 Second Rule -->
+          <div class="game-select-card" id="card-five-seconds">
+            <div class="game-card-icon-box" style="background: rgba(255, 213, 79, 0.1); color: #ffd54f;">
+              <span>⏱️</span>
+            </div>
+            <div class="game-select-info">
+              <h3>تحدي الـ 5 ثواني (5 Second Rule)</h3>
+              <p>تحدي السرعة والإثارة! هل يمكنك تسمية 3 أشياء في فئة محددة خلال 5 ثوانٍ فقط؟</p>
+              <span class="game-player-count-badge">2 - 16 لاعب</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="game-controls">
+          <button class="btn btn-outline btn-large" id="btn-back-players">
+            <span>تعديل اللاعبين 👥</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. ACTIVE GAMEPLAY CANVAS SCREEN -->
+    <div class="screen" id="screen-gameplay">
+      <div class="gameplay-header-bar">
+        <button class="btn-top-nav" id="btn-gameplay-back">↩️ رجوع</button>
+        <button class="btn-top-nav btn-top-exit" id="btn-gameplay-exit">🚪 إنهاء اللعبة</button>
+      </div>
+      <div id="gameplay-container" style="display: contents;">
+        <!-- Injected dynamically by game modules -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sound effect synthesizer and game logic modules -->
+  <script src="js/sounds.js"></script>
+  <script src="js/words.js"></script>
+  <script src="js/games/undercover.js"></script>
+  <script src="js/games/bomb.js"></script>
+  <script src="js/games/charades.js"></script>
+  <script src="js/games/taboo.js"></script>
+  <script src="js/games/would_you_rather.js"></script>
+  <script src="js/games/truth_or_dare.js"></script>
+  <script src="js/games/five_seconds.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
