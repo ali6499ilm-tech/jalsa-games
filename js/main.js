@@ -1,14 +1,41 @@
 // Jalsa Party Games Hub Coordinator
 const App = (() => {
   // 1. App State
-  let players = [
-    { id: 1, name: "أحمد", emoji: "🦁", color: "#ff5e62" },
-    { id: 2, name: "سارة", emoji: "🦊", color: "#ff9966" },
-    { id: 3, name: "محمد", emoji: "🐼", color: "#00f2fe" },
-    { id: 4, name: "فاطمة", emoji: "🦄", color: "#bd00ff" }
-  ];
-  let nextPlayerId = 5;
+  let players = [];
+  let nextPlayerId = 1;
   let activeGame = null; // References current playing game module for cleanup
+
+  const loadPlayers = () => {
+    const storedPlayers = localStorage.getItem('jalsa_players');
+    const storedNextId = localStorage.getItem('jalsa_next_player_id');
+    
+    if (storedPlayers) {
+      try {
+        players = JSON.parse(storedPlayers);
+        nextPlayerId = storedNextId ? parseInt(storedNextId, 10) : (Math.max(...players.map(p => p.id), 0) + 1);
+      } catch (e) {
+        console.error("Error parsing stored players", e);
+        setDefaultPlayers();
+      }
+    } else {
+      setDefaultPlayers();
+    }
+  };
+
+  const setDefaultPlayers = () => {
+    players = [
+      { id: 1, name: "أحمد", emoji: "🦁", color: "#ff5e62" },
+      { id: 2, name: "سارة", emoji: "🦊", color: "#ff9966" },
+      { id: 3, name: "محمد", emoji: "🐼", color: "#00f2fe" },
+      { id: 4, name: "فاطمة", emoji: "🦄", color: "#bd00ff" }
+    ];
+    nextPlayerId = 5;
+  };
+
+  const savePlayers = () => {
+    localStorage.setItem('jalsa_players', JSON.stringify(players));
+    localStorage.setItem('jalsa_next_player_id', nextPlayerId);
+  };
 
   const emojisList = ["🦁", "🦊", "🐼", "🦄", "🐯", "🐱", "🐶", "🐻", "🐨", "🐰", "🐸", "🐙", "🐒", "🦖", "🦉", "🦩", "🐝", "🐥"];
   const colorsList = ["#ff5e62", "#ff9966", "#ffb300", "#00e676", "#00f2fe", "#4facfe", "#bd00ff", "#ff3366", "#00adb5", "#fbc531", "#44bd32", "#8c7ae6"];
@@ -60,6 +87,7 @@ const App = (() => {
       gameplayContainer: document.getElementById('gameplay-container')
     };
 
+    loadPlayers();
     setupEventListeners();
     renderEmojiSelector();
     renderColorSelector();
@@ -314,6 +342,7 @@ const App = (() => {
     };
 
     players.push(newPlayer);
+    savePlayers();
     Sounds.playSuccess();
 
     // Clear input
@@ -333,7 +362,29 @@ const App = (() => {
 
   const deletePlayer = (id) => {
     players = players.filter(p => p.id !== id);
+    savePlayers();
     Sounds.playFail();
+    renderPlayersList();
+  };
+
+  const movePlayer = (id, direction) => {
+    const index = players.findIndex(p => p.id === id);
+    if (index === -1) return;
+
+    if (direction === 'up' && index > 0) {
+      const temp = players[index];
+      players[index] = players[index - 1];
+      players[index - 1] = temp;
+    } else if (direction === 'down' && index < players.length - 1) {
+      const temp = players[index];
+      players[index] = players[index + 1];
+      players[index + 1] = temp;
+    } else {
+      return;
+    }
+
+    savePlayers();
+    Sounds.playClick();
     renderPlayersList();
   };
 
@@ -350,15 +401,34 @@ const App = (() => {
       return;
     }
 
-    elements.playersListContainer.innerHTML = players.map(p => `
+    elements.playersListContainer.innerHTML = players.map((p, index) => `
       <div class="player-row" style="border-right: 4px solid ${p.color}">
         <div class="player-row-avatar" style="background: ${p.color}22">
           <span>${p.emoji}</span>
         </div>
         <span class="player-row-name">${p.name}</span>
-        <button class="btn-delete-player" data-id="${p.id}">❌</button>
+        <div class="player-row-actions">
+          <button class="btn-move-player btn-move-up" data-id="${p.id}" ${index === 0 ? 'disabled' : ''}>⬆️</button>
+          <button class="btn-move-player btn-move-down" data-id="${p.id}" ${index === players.length - 1 ? 'disabled' : ''}>⬇️</button>
+          <button class="btn-delete-player" data-id="${p.id}">❌</button>
+        </div>
       </div>
     `).join('');
+
+    // Attach move listeners
+    elements.playersListContainer.querySelectorAll('.btn-move-up').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-id'));
+        movePlayer(id, 'up');
+      });
+    });
+
+    elements.playersListContainer.querySelectorAll('.btn-move-down').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-id'));
+        movePlayer(id, 'down');
+      });
+    });
 
     // Attach delete listeners
     elements.playersListContainer.querySelectorAll('.btn-delete-player').forEach(btn => {
