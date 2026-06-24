@@ -93,6 +93,7 @@ const Billing = (() => {
             }
             await response.complete('success');
             setProUser(true);
+            if (window.updateProButtons) window.updateProButtons();
             if (typeof Sounds !== 'undefined' && typeof Sounds.playSuccess === 'function') {
               Sounds.playSuccess();
             }
@@ -148,6 +149,7 @@ const Billing = (() => {
 
       document.getElementById('btn-payment-done').addEventListener('click', () => {
         setProUser(true);
+        if (window.updateProButtons) window.updateProButtons();
         modal.remove();
         if (onSuccess) onSuccess();
       });
@@ -283,6 +285,35 @@ const App = (() => {
   let currentScreenId = 'screen-home';
   let elements = {};
 
+  const updateProButtons = () => {
+    const isPro = Billing.isProUser();
+    if (isPro) {
+      if (elements.btnHomeBuyPro) {
+        elements.btnHomeBuyPro.innerHTML = '<span>👑 النسخة الاحترافية نشطة</span>';
+        elements.btnHomeBuyPro.style.borderColor = 'var(--success)';
+        elements.btnHomeBuyPro.style.color = 'var(--success)';
+        elements.btnHomeBuyPro.style.boxShadow = '0 0 10px rgba(0, 230, 118, 0.2)';
+        elements.btnHomeBuyPro.disabled = true;
+      }
+      if (elements.btnGamesBuyPro) {
+        elements.btnGamesBuyPro.style.display = 'none';
+      }
+    } else {
+      if (elements.btnHomeBuyPro) {
+        elements.btnHomeBuyPro.innerHTML = '<span>💎 تفعيل النسخة البرو (Pro)</span>';
+        elements.btnHomeBuyPro.style.borderColor = '#ffd700';
+        elements.btnHomeBuyPro.style.color = '#ffd700';
+        elements.btnHomeBuyPro.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.15)';
+        elements.btnHomeBuyPro.disabled = false;
+      }
+      if (elements.btnGamesBuyPro) {
+        elements.btnGamesBuyPro.style.display = 'block';
+      }
+    }
+  };
+
+  window.updateProButtons = updateProButtons;
+
   const init = () => {
     // Cache elements
     elements = {
@@ -297,6 +328,9 @@ const App = (() => {
       btnGoToGames: document.getElementById('btn-go-games'),
       btnBackToPlayers: document.getElementById('btn-back-players'),
       btnBackToHome: document.getElementById('btn-back-home'),
+      
+      btnHomeBuyPro: document.getElementById('btn-home-buy-pro'),
+      btnGamesBuyPro: document.getElementById('btn-games-buy-pro'),
       
       // Top Navigation during gameplay
       btnGameplayExit: document.getElementById('btn-gameplay-exit'),
@@ -324,6 +358,7 @@ const App = (() => {
 
     loadPlayers();
     Billing.init();
+    updateProButtons();
     setupEventListeners();
     renderEmojiSelector();
     renderColorSelector();
@@ -360,6 +395,25 @@ const App = (() => {
   };
 
   const setupEventListeners = () => {
+    // Pro purchase events
+    if (elements.btnHomeBuyPro) {
+      elements.btnHomeBuyPro.addEventListener('click', () => {
+        Sounds.playClick();
+        if (!Billing.isProUser()) {
+          Billing.buyPro();
+        }
+      });
+    }
+
+    if (elements.btnGamesBuyPro) {
+      elements.btnGamesBuyPro.addEventListener('click', () => {
+        Sounds.playClick();
+        if (!Billing.isProUser()) {
+          Billing.buyPro();
+        }
+      });
+    }
+
     // Basic Navigation
     elements.btnStart.addEventListener('click', () => {
       Sounds.playClick();
