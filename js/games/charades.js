@@ -108,7 +108,7 @@ const CharadesGame = (() => {
           <div class="category-buttons-grid">
             <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.charades).map(cat => {
-              const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "حيوانات وأشياء": "🦁", "أفعال وحركات": "🏃‍♂️", "كرتون وأفلام": "🎬", "ألعاب وتكنولوجيا": "🎮", "أمثال وتعبيرات": "💬" };
+              const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "حيوانات وأشياء": "🦁", "أفعال وحركات": "🏃‍♂️", "كرتون وأفلام": "🎬", "ألعاب وتكنولوجيا": "🎮", "أمثال وتعبيرات": "💬", "ماركات وشركات": "🏷️", "أماكن ومعالم": "🏛️" };
               const isLocked = window.isCategoryLocked('charades', cat);
               return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
                 ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
