@@ -1427,3 +1427,31 @@ p {
   background: rgba(255, 23, 68, 0.1);
 }
 
+/* Team Manual Swapping */
+.team-column ul li.team-player-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all var(--transition-fast);
+}
+.team-column ul li.team-player-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateX(-4px);
+}
+.team-swap-btn {
+  font-size: 0.85rem;
+  opacity: 0.4;
+  transition: opacity var(--transition-fast);
+  color: var(--text-muted);
+}
+.team-column ul li.team-player-item:hover .team-swap-btn {
+  opacity: 1;
+  color: #fff;
+}
+

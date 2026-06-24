@@ -49,6 +49,22 @@ const CharadesGame = (() => {
     currentTeam = teamA;
   };
 
+  const swapPlayerTeam = (playerId) => {
+    const idxA = teamA.players.findIndex(p => p.id === playerId);
+    if (idxA !== -1) {
+      const [player] = teamA.players.splice(idxA, 1);
+      teamB.players.push(player);
+    } else {
+      const idxB = teamB.players.findIndex(p => p.id === playerId);
+      if (idxB !== -1) {
+        const [player] = teamB.players.splice(idxB, 1);
+        teamA.players.push(player);
+      }
+    }
+    Sounds.playClick();
+    setupCategorySelection();
+  };
+
   const setupCategorySelection = () => {
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in">
@@ -57,17 +73,32 @@ const CharadesGame = (() => {
           <h2>إعدادات اللعبة 🎭</h2>
         </div>
 
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span class="selector-label" style="margin-bottom: 0;">تقسيم الفرق (اضغط على اللاعب للتبديل):</span>
+          <button class="btn btn-outline" id="btn-shuffle-teams" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 8px;">🔀 عشوائي</button>
+        </div>
+
         <div class="teams-division-card">
           <div class="team-column col-red">
             <h3>${teamA.name}</h3>
             <ul>
-              ${teamA.players.map(p => `<li style="color: ${p.color}">${p.emoji} ${p.name}</li>`).join('')}
+              ${teamA.players.map(p => `
+                <li class="team-player-item" data-id="${p.id}" style="color: ${p.color}">
+                  <span>${p.emoji} ${p.name}</span>
+                  <span class="team-swap-btn">⇄</span>
+                </li>
+              `).join('')}
             </ul>
           </div>
           <div class="team-column col-blue">
             <h3>${teamB.name}</h3>
             <ul>
-              ${teamB.players.map(p => `<li style="color: ${p.color}">${p.emoji} ${p.name}</li>`).join('')}
+              ${teamB.players.map(p => `
+                <li class="team-player-item" data-id="${p.id}" style="color: ${p.color}">
+                  <span>${p.emoji} ${p.name}</span>
+                  <span class="team-swap-btn">⇄</span>
+                </li>
+              `).join('')}
             </ul>
           </div>
         </div>
@@ -91,6 +122,25 @@ const CharadesGame = (() => {
       </div>
     `;
 
+    // Attach team swap listeners
+    containerEl.querySelectorAll('.team-player-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const id = parseInt(item.getAttribute('data-id'), 10);
+        swapPlayerTeam(id);
+      });
+    });
+
+    // Attach shuffle listener
+    const shuffleBtn = containerEl.querySelector('#btn-shuffle-teams');
+    if (shuffleBtn) {
+      shuffleBtn.addEventListener('click', () => {
+        playersList.sort(() => Math.random() - 0.5);
+        distributeTeams();
+        Sounds.playClick();
+        setupCategorySelection();
+      });
+    }
+
     const catButtons = containerEl.querySelectorAll('.cat-select-btn');
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -103,6 +153,12 @@ const CharadesGame = (() => {
 
     document.getElementById('btn-start-charades-setup').addEventListener('click', () => {
       Sounds.playClick();
+      
+      if (teamA.players.length === 0 || teamB.players.length === 0) {
+        showCustomAlert("يجب أن يحتوي كل فريق على لاعب واحد على الأقل للعب!");
+        return;
+      }
+
       prepareWords();
       startNewRound();
     });

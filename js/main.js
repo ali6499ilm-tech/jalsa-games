@@ -1,4 +1,35 @@
 // Jalsa Party Games Hub Coordinator
+
+// 0. Global Custom Alert Modal Function
+window.showCustomAlert = (message) => {
+  // Remove any existing modal overlays
+  const existing = document.querySelector('.custom-modal-overlay');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'custom-modal-overlay animate-fade-in';
+  modal.innerHTML = `
+    <div class="custom-modal-card animate-zoom-in">
+      <h3 style="font-size: 3rem; margin-bottom: 10px;">⚠️</h3>
+      <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 20px; line-height: 1.6; color: #fff;">${message}</p>
+      <button class="btn btn-primary" id="modal-alert-ok" style="width: 100%;">موافق</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  
+  if (typeof Sounds !== 'undefined' && typeof Sounds.playFail === 'function') {
+    Sounds.playFail();
+  }
+
+  document.getElementById('modal-alert-ok').addEventListener('click', () => {
+    if (typeof Sounds !== 'undefined' && typeof Sounds.playClick === 'function') {
+      Sounds.playClick();
+    }
+    modal.remove();
+  });
+};
+
 const App = (() => {
   // 1. App State
   let players = [];
@@ -122,7 +153,7 @@ const App = (() => {
     elements.btnGoToGames.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 3) {
-        alert("تحتاج إلى إضافة 3 لاعبين على الأقل للعب!");
+        showCustomAlert("تحتاج إلى إضافة 3 لاعبين على الأقل للعب!");
         return;
       }
       showScreen('screen-games');
@@ -133,7 +164,7 @@ const App = (() => {
       showScreen('screen-players');
     });
 
-    // Top Bar Gameplay buttons
+    // Top Navigation during gameplay
     elements.btnGameplayBack.addEventListener('click', () => {
       showCustomConfirm("هل تريد الرجوع إلى قائمة اختيار الألعاب؟ سيتم إلغاء جولة اللعب الحالية.", () => {
         exitGameplay('screen-games');
@@ -161,7 +192,7 @@ const App = (() => {
     elements.cardUndercover.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 3) {
-        alert("تتطلب لعبة الجاسوس 3 لاعبين على الأقل.");
+        showCustomAlert("تتطلب لعبة الجاسوس 3 لاعبين على الأقل.");
         return;
       }
       showScreen('screen-gameplay');
@@ -172,7 +203,7 @@ const App = (() => {
     elements.cardBomb.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 3) {
-        alert("تتطلب لعبة قنبلة الكلمات 3 لاعبين على الأقل.");
+        showCustomAlert("تتطلب لعبة قنبلة الكلمات 3 لاعبين على الأقل.");
         return;
       }
       showScreen('screen-gameplay');
@@ -183,7 +214,7 @@ const App = (() => {
     elements.cardCharades.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 4) {
-        alert("تتطلب لعبة بدون كلام 4 لاعبين على الأقل (ليتم تقسيمهم إلى فريقين).");
+        showCustomAlert("تتطلب لعبة بدون كلام 4 لاعبين على الأقل (ليتم تقسيمهم إلى فريقين).");
         return;
       }
       showScreen('screen-gameplay');
@@ -194,7 +225,7 @@ const App = (() => {
     elements.cardTaboo.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 4) {
-        alert("تتطلب لعبة قول بس لا تقول 4 لاعبين على الأقل (ليتم تقسيمهم إلى فريقين).");
+        showCustomAlert("تتطلب لعبة قول بس لا تقول 4 لاعبين على الأقل (ليتم تقسيمهم إلى فريقين).");
         return;
       }
       showScreen('screen-gameplay');
@@ -205,7 +236,7 @@ const App = (() => {
     elements.cardWyr.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 2) {
-        alert("تتطلب لعبة لو خيروك لاعبين على الأقل.");
+        showCustomAlert("تتطلب لعبة لو خيروك لاعبين على الأقل.");
         return;
       }
       showScreen('screen-gameplay');
@@ -216,7 +247,7 @@ const App = (() => {
     elements.cardTod.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 2) {
-        alert("تتطلب لعبة صراحة أو تحدي لاعبين على الأقل.");
+        showCustomAlert("تتطلب لعبة صراحة أو تحدي لاعبين على الأقل.");
         return;
       }
       showScreen('screen-gameplay');
@@ -227,7 +258,7 @@ const App = (() => {
     elements.cardFiveSeconds.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 2) {
-        alert("تتطلب لعبة تحدي الـ 5 ثواني لاعبين على الأقل.");
+        showCustomAlert("تتطلب لعبة تحدي الـ 5 ثواني لاعبين على الأقل.");
         return;
       }
       showScreen('screen-gameplay');
@@ -319,18 +350,18 @@ const App = (() => {
   const addPlayer = () => {
     const name = elements.playerNameInput.value.trim();
     if (!name) {
-      alert("الرجاء إدخال اسم اللاعب!");
+      showCustomAlert("الرجاء إدخال اسم اللاعب!");
       return;
     }
 
     if (players.length >= 16) {
-      alert("الحد الأقصى هو 16 لاعب!");
+      showCustomAlert("الحد الأقصى هو 16 لاعب!");
       return;
     }
 
     // Name uniqueness validation
     if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-      alert("اسم اللاعب موجود بالفعل، يرجى اختيار اسم آخر!");
+      showCustomAlert("اسم اللاعب موجود بالفعل، يرجى اختيار اسم آخر!");
       return;
     }
 
