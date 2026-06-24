@@ -36,6 +36,9 @@
   user-select: none;
 }
 
+html, body {
+  overscroll-behavior: none;
+}
 body {
   font-family: var(--font-arabic);
   background: #07050f;

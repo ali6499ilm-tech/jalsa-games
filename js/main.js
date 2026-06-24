@@ -123,9 +123,21 @@ const App = (() => {
     renderEmojiSelector();
     renderColorSelector();
     renderPlayersList();
+
+    // Initialize history state for native Android back button support
+    window.history.replaceState({ screen: 'screen-home' }, '');
+    window.addEventListener('popstate', (event) => {
+      if (event.state && event.state.screen) {
+        if (currentScreenId === 'screen-gameplay') {
+          exitGameplay(event.state.screen);
+        } else {
+          showScreen(event.state.screen, false);
+        }
+      }
+    });
   };
 
-  const showScreen = (screenId) => {
+  const showScreen = (screenId, pushState = true) => {
     Object.keys(elements.screens).forEach(key => {
       const screen = elements.screens[key];
       if (screen.id === screenId) {
@@ -136,6 +148,10 @@ const App = (() => {
     });
     currentScreenId = screenId;
     window.scrollTo(0, 0);
+
+    if (pushState) {
+      window.history.pushState({ screen: screenId }, '');
+    }
   };
 
   const setupEventListeners = () => {
