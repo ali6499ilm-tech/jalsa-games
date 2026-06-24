@@ -1431,30 +1431,58 @@ p {
 }
 
 /* Team Manual Swapping */
-.team-column ul li.team-player-item {
+.team-player-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: rgba(255, 255, 255, 0.03);
   padding: 8px 12px;
   border-radius: 12px;
-  cursor: pointer;
+  margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 0.95rem;
+}
+.btn-swap-team-action {
+  font-family: var(--font-arabic);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
-.team-column ul li.team-player-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.08);
-  transform: translateX(-4px);
+.btn-swap-team-action.swap-to-blue:hover {
+  background: rgba(0, 173, 181, 0.2);
+  color: #00adb5;
+  border-color: #00adb5;
 }
-.team-swap-btn {
-  font-size: 0.85rem;
+.btn-swap-team-action.swap-to-red:hover {
+  background: rgba(255, 62, 0, 0.2);
+  color: #ff3e00;
+  border-color: #ff3e00;
+}
+
+/* Drag to Reorder Styles */
+.player-row.dragging {
   opacity: 0.4;
-  transition: opacity var(--transition-fast);
-  color: var(--text-muted);
+  border: 1px dashed var(--primary) !important;
+  background: rgba(0, 242, 254, 0.05) !important;
 }
-.team-column ul li.team-player-item:hover .team-swap-btn {
-  opacity: 1;
+.player-drag-handle {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: grab;
+  padding: 4px 10px;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.player-drag-handle:active {
+  cursor: grabbing;
   color: #fff;
 }
 

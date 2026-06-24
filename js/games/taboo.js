@@ -74,32 +74,32 @@ const TabooGame = (() => {
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span class="selector-label" style="margin-bottom: 0;">تقسيم الفرق (اضغط على اللاعب للتبديل):</span>
+          <span class="selector-label" style="margin-bottom: 0;">تقسيم الفرق يدوياً:</span>
           <button class="btn btn-outline" id="btn-shuffle-teams" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 8px;">🔀 عشوائي</button>
         </div>
 
         <div class="teams-division-card">
           <div class="team-column col-red">
             <h3>${teamA.name}</h3>
-            <ul>
+            <div class="team-list">
               ${teamA.players.map(p => `
-                <li class="team-player-item" data-id="${p.id}" style="color: ${p.color}">
-                  <span>${p.emoji} ${p.name}</span>
-                  <span class="team-swap-btn">⇄</span>
-                </li>
+                <div class="team-player-row" style="border-right: 3px solid ${p.color}">
+                  <span style="color: #fff; font-weight: 600;">${p.emoji} ${p.name}</span>
+                  <button class="btn-swap-team-action swap-to-blue" data-id="${p.id}">⬅️ فريق ب</button>
+                </div>
               `).join('')}
-            </ul>
+            </div>
           </div>
           <div class="team-column col-blue">
             <h3>${teamB.name}</h3>
-            <ul>
+            <div class="team-list">
               ${teamB.players.map(p => `
-                <li class="team-player-item" data-id="${p.id}" style="color: ${p.color}">
-                  <span>${p.emoji} ${p.name}</span>
-                  <span class="team-swap-btn">⇄</span>
-                </li>
+                <div class="team-player-row" style="border-right: 3px solid ${p.color}">
+                  <span style="color: #fff; font-weight: 600;">${p.emoji} ${p.name}</span>
+                  <button class="btn-swap-team-action swap-to-red" data-id="${p.id}">فريق أ ➡️</button>
+                </div>
               `).join('')}
-            </ul>
+            </div>
           </div>
         </div>
 
@@ -123,9 +123,10 @@ const TabooGame = (() => {
     `;
 
     // Attach team swap listeners
-    containerEl.querySelectorAll('.team-player-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const id = parseInt(item.getAttribute('data-id'), 10);
+    containerEl.querySelectorAll('.btn-swap-team-action').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = parseInt(btn.getAttribute('data-id'), 10);
         swapPlayerTeam(id);
       });
     });

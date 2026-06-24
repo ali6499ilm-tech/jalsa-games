@@ -407,31 +407,89 @@ const App = (() => {
     renderPlayersList();
   };
 
+  let draggedPlayerId = null;
+  let touchStartY = 0;
+  let activeTouchRow = null;
+
+  const handleDragStart = (e) => {
+    draggedPlayerId = parseInt(e.target.closest('.player-row').getAttribute('data-id'), 10);
+    e.target.closest('.player-row').classList.add('dragging');
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    const row = e.target.closest('.player-row');
+    if (!row || draggedPlayerId === null) return;
+    
+    const targetId = parseInt(row.getAttribute('data-id'), 10);
+    if (targetId === draggedPlayerId) return;
+
+    const draggedIndex = players.findIndex(p => p.id === draggedPlayerId);
+    const targetIndex = players.findIndex(p => p.id === targetId);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      const [draggedPlayer] = players.splice(draggedIndex, 1);
+      players.splice(targetIndex, 0, draggedPlayer);
+      savePlayers();
+      renderPlayersList();
+      
+      const newDraggedRow = elements.playersListContainer.querySelector(`.player-row[data-id="${draggedPlayerId}"]`);
+      if (newDraggedRow) newDraggedRow.classList.add('dragging');
+    }
+  };
+
+  const handleDragEnd = (e) => {
+    const row = e.target.closest('.player-row');
+    if (row) row.classList.remove('dragging');
+    draggedPlayerId = null;
+    Sounds.playClick();
+  };
+
+  const handleTouchStart = (e) => {
+    activeTouchRow = e.target.closest('.player-row');
+    if (!activeTouchRow) return;
+    touchStartY = e.touches[0].clientY;
+    activeTouchRow.classList.add('dragging');
+  };
+
+  const handleTouchMove = (e) => {
+    if (!activeTouchRow) return;
+    e.preventDefault();
+    const touchY = e.touches[0].clientY;
+    const elementUnderTouch = document.elementFromPoint(e.touches[0].clientX, touchY);
+    const targetRow = elementUnderTouch ? elementUnderTouch.closest('.player-row') : null;
+    
+    if (targetRow && targetRow !== activeTouchRow) {
+      const draggedId = parseInt(activeTouchRow.getAttribute('data-id'), 10);
+      const targetId = parseInt(targetRow.getAttribute('data-id'), 10);
+      
+      const draggedIndex = players.findIndex(p => p.id === draggedId);
+      const targetIndex = players.findIndex(p => p.id === targetId);
+      
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const [draggedPlayer] = players.splice(draggedIndex, 1);
+        players.splice(targetIndex, 0, draggedPlayer);
+        savePlayers();
+        renderPlayersList();
+        
+        activeTouchRow = elements.playersListContainer.querySelector(`.player-row[data-id="${draggedId}"]`);
+        if (activeTouchRow) activeTouchRow.classList.add('dragging');
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (activeTouchRow) {
+      activeTouchRow.classList.remove('dragging');
+    }
+    activeTouchRow = null;
+    Sounds.playClick();
+  };
+
   const deletePlayer = (id) => {
     players = players.filter(p => p.id !== id);
     savePlayers();
     Sounds.playFail();
-    renderPlayersList();
-  };
-
-  const movePlayer = (id, direction) => {
-    const index = players.findIndex(p => p.id === id);
-    if (index === -1) return;
-
-    if (direction === 'up' && index > 0) {
-      const temp = players[index];
-      players[index] = players[index - 1];
-      players[index - 1] = temp;
-    } else if (direction === 'down' && index < players.length - 1) {
-      const temp = players[index];
-      players[index] = players[index + 1];
-      players[index + 1] = temp;
-    } else {
-      return;
-    }
-
-    savePlayers();
-    Sounds.playClick();
     renderPlayersList();
   };
 
@@ -448,33 +506,30 @@ const App = (() => {
       return;
     }
 
-    elements.playersListContainer.innerHTML = players.map((p, index) => `
-      <div class="player-row" style="border-right: 4px solid ${p.color}">
+    elements.playersListContainer.innerHTML = players.map(p => `
+      <div class="player-row" data-id="${p.id}" draggable="true" style="border-right: 4px solid ${p.color}">
+        <div class="player-drag-handle">⠿</div>
         <div class="player-row-avatar" style="background: ${p.color}22">
           <span>${p.emoji}</span>
         </div>
         <span class="player-row-name">${p.name}</span>
-        <div class="player-row-actions">
-          <button class="btn-move-player btn-move-up" data-id="${p.id}" ${index === 0 ? 'disabled' : ''}>⬆️</button>
-          <button class="btn-move-player btn-move-down" data-id="${p.id}" ${index === players.length - 1 ? 'disabled' : ''}>⬇️</button>
-          <button class="btn-delete-player" data-id="${p.id}">❌</button>
-        </div>
+        <button class="btn-delete-player" data-id="${p.id}">❌</button>
       </div>
     `).join('');
 
-    // Attach move listeners
-    elements.playersListContainer.querySelectorAll('.btn-move-up').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = parseInt(btn.getAttribute('data-id'));
-        movePlayer(id, 'up');
-      });
-    });
-
-    elements.playersListContainer.querySelectorAll('.btn-move-down').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = parseInt(btn.getAttribute('data-id'));
-        movePlayer(id, 'down');
-      });
+    // Attach desktop drag & drop listeners
+    elements.playersListContainer.querySelectorAll('.player-row').forEach(row => {
+      row.addEventListener('dragstart', handleDragStart);
+      row.addEventListener('dragover', handleDragOver);
+      row.addEventListener('dragend', handleDragEnd);
+      
+      // Attach touch listeners for mobile
+      const handle = row.querySelector('.player-drag-handle');
+      if (handle) {
+        handle.addEventListener('touchstart', handleTouchStart, { passive: false });
+        handle.addEventListener('touchmove', handleTouchMove, { passive: false });
+        handle.addEventListener('touchend', handleTouchEnd);
+      }
     });
 
     // Attach delete listeners
