@@ -94,7 +94,6 @@ const App = (() => {
       btnBackToHome: document.getElementById('btn-back-home'),
       
       // Top Navigation during gameplay
-      btnGameplayBack: document.getElementById('btn-gameplay-back'),
       btnGameplayExit: document.getElementById('btn-gameplay-exit'),
       
       // Player management
@@ -181,15 +180,9 @@ const App = (() => {
     });
 
     // Top Navigation during gameplay
-    elements.btnGameplayBack.addEventListener('click', () => {
-      showCustomConfirm("هل تريد الرجوع إلى قائمة اختيار الألعاب؟ سيتم إلغاء جولة اللعب الحالية.", () => {
-        exitGameplay('screen-games');
-      });
-    });
-
     elements.btnGameplayExit.addEventListener('click', () => {
-      showCustomConfirm("هل تريد إنهاء اللعب بالكامل والعودة لقائمة اللاعبين؟", () => {
-        exitGameplay('screen-players');
+      showCustomConfirm("هل تريد إنهاء اللعب والعودة لقائمة اختيار الألعاب؟ سيتم إلغاء الجولة الحالية.", () => {
+        window.history.back();
       });
     });
 
