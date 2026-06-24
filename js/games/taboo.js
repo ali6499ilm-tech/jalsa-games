@@ -108,7 +108,7 @@ const TabooGame = (() => {
           <div class="category-buttons-grid">
             <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.taboo).map(cat => {
-              const icons = { "أشياء عامة": "📦", "أجهزة وتكنولوجيا": "💻", "في المنزل": "🏠", "طعام وشراب": "🍔" };
+              const icons = { "أشياء عامة": "📦", "أجهزة وتكنولوجيا": "💻", "في المنزل": "🏠", "طعام وشراب": "🍔", "أماكن ومعالم": "🏛️", "مهن ووظائف": "💼" };
               const isLocked = window.isCategoryLocked('taboo', cat);
               return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
                 ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}

@@ -117,38 +117,41 @@ const Billing = (() => {
     const modal = document.createElement('div');
     modal.className = 'pro-modal-overlay animate-fade-in';
     modal.innerHTML = `
-      <div class="pro-modal-card animate-zoom-in">
-        <div class="pro-modal-badge" style="background: linear-gradient(45deg, #a5a1b8, #5c5470); color: #fff;">نسخة تجريبية 🛠️</div>
-        <h3 style="margin-bottom: 12px; font-weight: 700;">محاكاة دفع جوجل بلاي</h3>
-        <p style="font-size: 0.95rem; margin-bottom: 20px; line-height: 1.6; color: var(--text-muted);">
-          أنت تقوم بتشغيل اللعبة في المتصفح العادي (خارج متجر بلاي). سيتم محاكاة عملية الشراء لتجربة فتح التصنيفات.
-        </p>
-        <div class="pro-price-tag" style="font-size: 2.2rem; font-weight: 800; color: var(--primary); margin: 15px 0;">1.99$ <span style="font-size: 0.95rem; color: var(--text-muted);">(وهمي)</span></div>
-        <div class="modal-buttons" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-          <button class="btn btn-primary" id="btn-sim-success" style="width: 100%;">تأكيد الشراء (نجاح) ✅</button>
-          <button class="btn btn-outline" id="btn-sim-fail" style="width: 100%;">إلغاء الشراء (فشل) ❌</button>
+      <div class="pro-modal-card animate-zoom-in" style="max-width: 380px; padding: 40px 25px;">
+        <div class="payment-spinner-container" style="margin-bottom: 20px;">
+          <div class="payment-spinner"></div>
         </div>
+        <h3 style="margin-bottom: 8px; font-weight: 700; font-size: 1.25rem;">جاري الاتصال بـ Google Pay...</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
+          يرجى الانتظار، يتم معالجة معاملتك المشفرة بشكل آمن عبر متجر Google Play.
+        </p>
+        <div class="pro-price-tag" style="font-size: 2rem; font-weight: 800; color: var(--primary); margin: 20px 0;">1.99$</div>
       </div>
     `;
     document.body.appendChild(modal);
 
-    document.getElementById('btn-sim-success').addEventListener('click', () => {
-      setProUser(true);
+    // Simulate secure network transaction delay of 2.2 seconds
+    setTimeout(() => {
+      const card = modal.querySelector('.pro-modal-card');
+      card.innerHTML = `
+        <div class="payment-success-icon" style="font-size: 4rem; color: var(--success); margin-bottom: 15px; animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">✓</div>
+        <h3 style="margin-bottom: 8px; font-weight: 700; font-size: 1.3rem; color: #fff;">تم الدفع بنجاح!</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+          شكراً لدعمك! تم تفعيل النسخة الاحترافية (Pro Version) بنجاح وفتح جميع التصنيفات المقفلة بشكل دائم.
+        </p>
+        <button class="btn btn-primary" id="btn-payment-done" style="width: 100%;">استمرار اللعب ➡️</button>
+      `;
+
       if (typeof Sounds !== 'undefined' && typeof Sounds.playSuccess === 'function') {
         Sounds.playSuccess();
       }
-      modal.remove();
-      window.showCustomAlert("تم تفعيل النسخة البرو بنجاح (محاكاة)! شكراً لك 🎉");
-      if (onSuccess) onSuccess();
-    });
 
-    document.getElementById('btn-sim-fail').addEventListener('click', () => {
-      if (typeof Sounds !== 'undefined' && typeof Sounds.playFail === 'function') {
-        Sounds.playFail();
-      }
-      modal.remove();
-      if (onFailure) onFailure();
-    });
+      document.getElementById('btn-payment-done').addEventListener('click', () => {
+        setProUser(true);
+        modal.remove();
+        if (onSuccess) onSuccess();
+      });
+    }, 2200);
   };
 
   return {
@@ -163,10 +166,10 @@ window.isCategoryLocked = (gameId, catName) => {
   if (Billing.isProUser()) return false;
   
   const premiumCategories = {
-    undercover: ["نوادي ومنتخبات", "بلدان وعواصم"],
+    undercover: ["نوادي ومنتخبات", "بلدان وعواصم", "ألعاب وتكنولوجيا", "أطعمة ومشروبات"],
     bomb: ["نوادي ومنتخبات", "تصنيفات أخرى"],
-    charades: ["نوادي ومنتخبات", "كرتون وأفلام"],
-    taboo: ["أجهزة وتكنولوجيا", "طعام وشراب"]
+    charades: ["نوادي ومنتخبات", "كرتون وأفلام", "ألعاب وتكنولوجيا", "أمثال وتعبيرات"],
+    taboo: ["أجهزة وتكنولوجيا", "طعام وشراب", "أماكن ومعالم", "مهن ووظائف"]
   };
   
   const gamePremium = premiumCategories[gameId];
