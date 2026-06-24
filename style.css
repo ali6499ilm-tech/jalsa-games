@@ -1431,37 +1431,36 @@ p {
 }
 
 /* Team Manual Swapping */
-.team-player-row {
+.team-player-row-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: rgba(255, 255, 255, 0.03);
-  padding: 8px 12px;
-  border-radius: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
   margin-bottom: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  font-size: 0.95rem;
-}
-.btn-swap-team-action {
-  font-family: var(--font-arabic);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  padding: 4px 8px;
-  border-radius: 6px;
   cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.95rem;
+  font-weight: 600;
   transition: all var(--transition-fast);
 }
-.btn-swap-team-action.swap-to-blue:hover {
-  background: rgba(0, 173, 181, 0.2);
-  color: #00adb5;
-  border-color: #00adb5;
+.team-player-row-card:active {
+  transform: scale(0.96);
 }
-.btn-swap-team-action.swap-to-red:hover {
-  background: rgba(255, 62, 0, 0.2);
+.team-player-row-card.color-red {
+  border-right: 4px solid #ff3e00;
   color: #ff3e00;
-  border-color: #ff3e00;
+}
+.team-player-row-card.color-red:hover {
+  background: rgba(255, 62, 0, 0.08);
+}
+.team-player-row-card.color-blue {
+  border-left: 4px solid #00adb5;
+  color: #00adb5;
+}
+.team-player-row-card.color-blue:hover {
+  background: rgba(0, 173, 181, 0.08);
 }
 
 /* Drag to Reorder Styles */

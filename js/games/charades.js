@@ -83,9 +83,9 @@ const CharadesGame = (() => {
             <h3>${teamA.name}</h3>
             <div class="team-list">
               ${teamA.players.map(p => `
-                <div class="team-player-row" style="border-right: 3px solid ${p.color}">
-                  <span style="color: #fff; font-weight: 600;">${p.emoji} ${p.name}</span>
-                  <button class="btn-swap-team-action swap-to-blue" data-id="${p.id}">⬅️ فريق ب</button>
+                <div class="team-player-row-card color-red" data-id="${p.id}">
+                  <span>${p.emoji} ${p.name}</span>
+                  <span>⬅️</span>
                 </div>
               `).join('')}
             </div>
@@ -94,9 +94,9 @@ const CharadesGame = (() => {
             <h3>${teamB.name}</h3>
             <div class="team-list">
               ${teamB.players.map(p => `
-                <div class="team-player-row" style="border-right: 3px solid ${p.color}">
-                  <span style="color: #fff; font-weight: 600;">${p.emoji} ${p.name}</span>
-                  <button class="btn-swap-team-action swap-to-red" data-id="${p.id}">فريق أ ➡️</button>
+                <div class="team-player-row-card color-blue" data-id="${p.id}">
+                  <span>➡️</span>
+                  <span>${p.emoji} ${p.name}</span>
                 </div>
               `).join('')}
             </div>
@@ -123,10 +123,9 @@ const CharadesGame = (() => {
     `;
 
     // Attach team swap listeners
-    containerEl.querySelectorAll('.btn-swap-team-action').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = parseInt(btn.getAttribute('data-id'), 10);
+    containerEl.querySelectorAll('.team-player-row-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = parseInt(card.getAttribute('data-id'), 10);
         swapPlayerTeam(id);
       });
     });
