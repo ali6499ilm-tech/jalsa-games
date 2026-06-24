@@ -44,7 +44,10 @@ const UndercoverGame = (() => {
             <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.undercover).map(cat => {
               const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "أشياء عامة": "📦", "حيوانات وطيور": "🦁", "بلدان وعواصم": "🗺️" };
-              return `<button class="cat-select-btn" data-cat="${cat}">${icons[cat] || "🏷️"} ${cat}</button>`;
+              const isLocked = window.isCategoryLocked('undercover', cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+                ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
+              </button>`;
             }).join('')}
           </div>
         </div>
@@ -73,9 +76,22 @@ const UndercoverGame = (() => {
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         Sounds.playClick();
+        const cat = btn.getAttribute('data-cat');
+        if (window.isCategoryLocked('undercover', cat)) {
+          window.showProUpgradeModal(() => {
+            renderLobbyScreen();
+            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
+            updatedButtons.forEach(b => {
+              if (b.getAttribute('data-cat') === cat) {
+                b.click();
+              }
+            });
+          });
+          return;
+        }
         catButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        selectedCategory = btn.getAttribute('data-cat');
+        selectedCategory = cat;
       });
     });
 
@@ -89,7 +105,10 @@ const UndercoverGame = (() => {
     // 1. Choose a word pair based on category selection
     let categoryKey = selectedCategory;
     if (selectedCategory === "عشوائي") {
-      const keys = Object.keys(WordBank.undercover);
+      let keys = Object.keys(WordBank.undercover);
+      if (!window.isProUser()) {
+        keys = keys.filter(k => !window.isCategoryLocked('undercover', k));
+      }
       categoryKey = keys[Math.floor(Math.random() * keys.length)];
     }
 

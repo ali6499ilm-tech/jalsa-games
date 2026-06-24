@@ -109,7 +109,10 @@ const TabooGame = (() => {
             <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.taboo).map(cat => {
               const icons = { "أشياء عامة": "📦", "أجهزة وتكنولوجيا": "💻", "في المنزل": "🏠", "طعام وشراب": "🍔" };
-              return `<button class="cat-select-btn" data-cat="${cat}">${icons[cat] || "🏷️"} ${cat}</button>`;
+              const isLocked = window.isCategoryLocked('taboo', cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+                ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
+              </button>`;
             }).join('')}
           </div>
         </div>
@@ -145,9 +148,22 @@ const TabooGame = (() => {
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         Sounds.playClick();
+        const cat = btn.getAttribute('data-cat');
+        if (window.isCategoryLocked('taboo', cat)) {
+          window.showProUpgradeModal(() => {
+            setupCategorySelection();
+            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
+            updatedButtons.forEach(b => {
+              if (b.getAttribute('data-cat') === cat) {
+                b.click();
+              }
+            });
+          });
+          return;
+        }
         catButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        selectedCategory = btn.getAttribute('data-cat');
+        selectedCategory = cat;
       });
     });
 
@@ -167,7 +183,11 @@ const TabooGame = (() => {
   const prepareWords = () => {
     let sourceWords = [];
     if (selectedCategory === "عشوائي") {
-      Object.keys(WordBank.taboo).forEach(key => {
+      let keys = Object.keys(WordBank.taboo);
+      if (!window.isProUser()) {
+        keys = keys.filter(k => !window.isCategoryLocked('taboo', k));
+      }
+      keys.forEach(key => {
         sourceWords = sourceWords.concat(WordBank.taboo[key]);
       });
     } else {

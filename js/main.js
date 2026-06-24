@@ -30,6 +30,208 @@ window.showCustomAlert = (message) => {
   });
 };
 
+// Billing & Premium Categories Manager
+const Billing = (() => {
+  let isPro = false;
+
+  const init = () => {
+    isPro = localStorage.getItem('jalsa_pro_version') === 'true';
+    if ('getDigitalGoodsService' in window) {
+      checkTwaPurchases();
+    }
+  };
+
+  const isProUser = () => {
+    return isPro;
+  };
+
+  const setProUser = (status) => {
+    isPro = status;
+    localStorage.setItem('jalsa_pro_version', status ? 'true' : 'false');
+  };
+
+  const checkTwaPurchases = async () => {
+    try {
+      const service = await window.getDigitalGoodsService('https://play.google.com/billing');
+      if (service) {
+        const purchases = await service.listPurchases();
+        for (const purchase of purchases) {
+          if (purchase.itemId === 'jalsa_pro_unlock') {
+            setProUser(true);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Digital Goods API check failed:", e);
+    }
+  };
+
+  const buyPro = async (onSuccess, onFailure) => {
+    if ('getDigitalGoodsService' in window) {
+      try {
+        const service = await window.getDigitalGoodsService('https://play.google.com/billing');
+        if (service) {
+          const paymentMethodData = [{
+            supportedMethods: 'https://play.google.com/billing',
+            data: { sku: 'jalsa_pro_unlock' }
+          }];
+          const paymentDetails = {
+            total: {
+              label: 'Jalsa Pro Upgrade',
+              amount: { currency: 'USD', value: '1.99' }
+            }
+          };
+          const request = new PaymentRequest(paymentMethodData, paymentDetails);
+          const response = await request.show();
+          
+          if (response.details && response.details.purchaseToken) {
+            try {
+              await service.acknowledge(response.details.purchaseToken, 'onetime');
+            } catch (ackError) {
+              console.error("Acknowledgement failed but continuing:", ackError);
+            }
+            await response.complete('success');
+            setProUser(true);
+            if (typeof Sounds !== 'undefined' && typeof Sounds.playSuccess === 'function') {
+              Sounds.playSuccess();
+            }
+            window.showCustomAlert("تم تفعيل النسخة البرو بنجاح! شكراً لك 🎉");
+            if (onSuccess) onSuccess();
+            return;
+          } else {
+            await response.complete('fail');
+          }
+        }
+      } catch (e) {
+        console.error("TWA Payment Request failed:", e);
+      }
+    }
+    showSimulationModal(onSuccess, onFailure);
+  };
+
+  const showSimulationModal = (onSuccess, onFailure) => {
+    const existing = document.querySelector('.pro-modal-overlay');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'pro-modal-overlay animate-fade-in';
+    modal.innerHTML = `
+      <div class="pro-modal-card animate-zoom-in">
+        <div class="pro-modal-badge" style="background: linear-gradient(45deg, #a5a1b8, #5c5470); color: #fff;">نسخة تجريبية 🛠️</div>
+        <h3 style="margin-bottom: 12px; font-weight: 700;">محاكاة دفع جوجل بلاي</h3>
+        <p style="font-size: 0.95rem; margin-bottom: 20px; line-height: 1.6; color: var(--text-muted);">
+          أنت تقوم بتشغيل اللعبة في المتصفح العادي (خارج متجر بلاي). سيتم محاكاة عملية الشراء لتجربة فتح التصنيفات.
+        </p>
+        <div class="pro-price-tag" style="font-size: 2.2rem; font-weight: 800; color: var(--primary); margin: 15px 0;">1.99$ <span style="font-size: 0.95rem; color: var(--text-muted);">(وهمي)</span></div>
+        <div class="modal-buttons" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+          <button class="btn btn-primary" id="btn-sim-success" style="width: 100%;">تأكيد الشراء (نجاح) ✅</button>
+          <button class="btn btn-outline" id="btn-sim-fail" style="width: 100%;">إلغاء الشراء (فشل) ❌</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btn-sim-success').addEventListener('click', () => {
+      setProUser(true);
+      if (typeof Sounds !== 'undefined' && typeof Sounds.playSuccess === 'function') {
+        Sounds.playSuccess();
+      }
+      modal.remove();
+      window.showCustomAlert("تم تفعيل النسخة البرو بنجاح (محاكاة)! شكراً لك 🎉");
+      if (onSuccess) onSuccess();
+    });
+
+    document.getElementById('btn-sim-fail').addEventListener('click', () => {
+      if (typeof Sounds !== 'undefined' && typeof Sounds.playFail === 'function') {
+        Sounds.playFail();
+      }
+      modal.remove();
+      if (onFailure) onFailure();
+    });
+  };
+
+  return {
+    init,
+    isProUser,
+    buyPro
+  };
+})();
+
+// Check if a category is premium and locked
+window.isCategoryLocked = (gameId, catName) => {
+  if (Billing.isProUser()) return false;
+  
+  const premiumCategories = {
+    undercover: ["نوادي ومنتخبات", "بلدان وعواصم"],
+    bomb: ["نوادي ومنتخبات", "تصنيفات أخرى"],
+    charades: ["نوادي ومنتخبات", "كرتون وأفلام"],
+    taboo: ["أجهزة وتكنولوجيا", "طعام وشراب"]
+  };
+  
+  const gamePremium = premiumCategories[gameId];
+  if (gamePremium && gamePremium.includes(catName)) {
+    return true;
+  }
+  return false;
+};
+
+// Show Premium Upgrade Dialog
+window.showProUpgradeModal = (onSuccess) => {
+  const existing = document.querySelector('.pro-modal-overlay');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'pro-modal-overlay animate-fade-in';
+  modal.innerHTML = `
+    <div class="pro-modal-card animate-zoom-in">
+      <button class="pro-close-btn" id="pro-modal-close">❌</button>
+      <div class="pro-modal-badge">النسخة الاحترافية 💎</div>
+      <h3 style="margin-bottom: 12px; font-weight: 700;">ترقية إلى النسخة البرو</h3>
+      <p style="font-size: 0.95rem; margin-bottom: 20px; line-height: 1.6; color: var(--text-muted);">
+        افتح الإمكانيات الكاملة للعبة واجعل جمعتكم أكثر حماساً وإثارة!
+      </p>
+      
+      <div class="pro-modal-features" style="margin: 20px 0; text-align: right; display: flex; flex-direction: column; gap: 12px;">
+        <div class="pro-feature-item" style="display: flex; align-items: center; gap: 10px; font-size: 0.95rem;">
+          <span class="pro-feature-icon" style="color: var(--primary);">✨</span>
+          <span>فتح جميع التصنيفات المقفلة في جميع الألعاب</span>
+        </div>
+        <div class="pro-feature-item" style="display: flex; align-items: center; gap: 10px; font-size: 0.95rem;">
+          <span class="pro-feature-icon" style="color: var(--primary);">✨</span>
+          <span>تصنيفات رياضية وثقافية وسينمائية مميزة</span>
+        </div>
+        <div class="pro-feature-item" style="display: flex; align-items: center; gap: 10px; font-size: 0.95rem;">
+          <span class="pro-feature-icon" style="color: var(--primary);">✨</span>
+          <span>دعم مطور اللعبة لمواصلة التحديثات الدورية</span>
+        </div>
+      </div>
+      
+      <div class="pro-price-tag" style="font-size: 2.2rem; font-weight: 800; color: var(--primary); margin: 15px 0;">1.99$ <span style="font-size: 0.9rem; color: var(--text-muted);">تدفع لمرة واحدة فقط</span></div>
+      
+      <button class="btn btn-accent btn-large" id="btn-buy-pro" style="margin-top: 10px; width: 100%;">
+        <span>شراء النسخة البرو الآن 💳</span>
+      </button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('pro-modal-close').addEventListener('click', () => {
+    if (typeof Sounds !== 'undefined' && typeof Sounds.playClick === 'function') {
+      Sounds.playClick();
+    }
+    modal.remove();
+  });
+
+  document.getElementById('btn-buy-pro').addEventListener('click', () => {
+    if (typeof Sounds !== 'undefined' && typeof Sounds.playClick === 'function') {
+      Sounds.playClick();
+    }
+    modal.remove();
+    Billing.buyPro(onSuccess);
+  });
+};
+
 const App = (() => {
   // 1. App State
   let players = [];
@@ -118,6 +320,7 @@ const App = (() => {
     };
 
     loadPlayers();
+    Billing.init();
     setupEventListeners();
     renderEmojiSelector();
     renderColorSelector();

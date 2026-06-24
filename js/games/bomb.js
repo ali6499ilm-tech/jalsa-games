@@ -60,7 +60,10 @@ const BombGame = (() => {
             <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.bomb).map(cat => {
               const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "تصنيفات أخرى": "🏷️" };
-              return `<button class="cat-select-btn" data-cat="${cat}">${icons[cat] || "🏷️"} ${cat}</button>`;
+              const isLocked = window.isCategoryLocked('bomb', cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+                ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
+              </button>`;
             }).join('')}
           </div>
         </div>
@@ -89,9 +92,22 @@ const BombGame = (() => {
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         Sounds.playClick();
+        const cat = btn.getAttribute('data-cat');
+        if (window.isCategoryLocked('bomb', cat)) {
+          window.showProUpgradeModal(() => {
+            renderLobbyScreen();
+            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
+            updatedButtons.forEach(b => {
+              if (b.getAttribute('data-cat') === cat) {
+                b.click();
+              }
+            });
+          });
+          return;
+        }
         catButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        selectedCategory = btn.getAttribute('data-cat');
+        selectedCategory = cat;
       });
     });
 
@@ -101,7 +117,11 @@ const BombGame = (() => {
       // Select category item based on choice
       let availableCats = [];
       if (selectedCategory === "عشوائي") {
-        Object.keys(WordBank.bomb).forEach(key => {
+        let keys = Object.keys(WordBank.bomb);
+        if (!window.isProUser()) {
+          keys = keys.filter(k => !window.isCategoryLocked('bomb', k));
+        }
+        keys.forEach(key => {
           availableCats = availableCats.concat(WordBank.bomb[key]);
         });
       } else {

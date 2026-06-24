@@ -109,7 +109,10 @@ const CharadesGame = (() => {
             <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.charades).map(cat => {
               const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "حيوانات وأشياء": "🦁", "أفعال وحركات": "🏃‍♂️", "كرتون وأفلام": "🎬" };
-              return `<button class="cat-select-btn" data-cat="${cat}">${icons[cat] || "🏷️"} ${cat}</button>`;
+              const isLocked = window.isCategoryLocked('charades', cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+                ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
+              </button>`;
             }).join('')}
           </div>
         </div>
@@ -145,9 +148,22 @@ const CharadesGame = (() => {
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         Sounds.playClick();
+        const cat = btn.getAttribute('data-cat');
+        if (window.isCategoryLocked('charades', cat)) {
+          window.showProUpgradeModal(() => {
+            setupCategorySelection();
+            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
+            updatedButtons.forEach(b => {
+              if (b.getAttribute('data-cat') === cat) {
+                b.click();
+              }
+            });
+          });
+          return;
+        }
         catButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        selectedCategory = btn.getAttribute('data-cat');
+        selectedCategory = cat;
       });
     });
 
@@ -167,7 +183,11 @@ const CharadesGame = (() => {
   const prepareWords = () => {
     let sourceWords = [];
     if (selectedCategory === "عشوائي") {
-      Object.keys(WordBank.charades).forEach(key => {
+      let keys = Object.keys(WordBank.charades);
+      if (!window.isProUser()) {
+        keys = keys.filter(k => !window.isCategoryLocked('charades', k));
+      }
+      keys.forEach(key => {
         sourceWords = sourceWords.concat(WordBank.charades[key].words);
       });
     } else {

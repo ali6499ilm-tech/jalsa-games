@@ -1485,3 +1485,96 @@ p {
   color: #fff;
 }
 
+/* Premium and Locking Styles */
+.cat-select-btn.premium-locked {
+  position: relative;
+  border: 1px dashed rgba(155, 81, 224, 0.4) !important;
+  background: rgba(155, 81, 224, 0.04) !important;
+  color: var(--text-muted) !important;
+  opacity: 0.85;
+  transition: all var(--transition-fast);
+}
+.cat-select-btn.premium-locked:hover {
+  border: 1px solid var(--accent) !important;
+  background: rgba(155, 81, 224, 0.1) !important;
+  color: #fff !important;
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(155, 81, 224, 0.25);
+}
+
+.pro-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(7, 5, 15, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pro-modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(135deg, rgba(22, 17, 43, 0.95) 0%, rgba(35, 23, 64, 0.95) 100%);
+  border: 2px solid rgba(155, 81, 224, 0.3);
+  border-radius: 28px;
+  padding: 35px 25px 25px;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(155, 81, 224, 0.25), 0 0 40px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.pro-modal-badge {
+  display: inline-block;
+  background: linear-gradient(45deg, #ffd700, #ffa500);
+  color: #07050f;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 4px 16px;
+  border-radius: 50px;
+  margin-bottom: 15px;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.pro-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.pro-close-btn:hover {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.pro-modal-features {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  padding: 15px;
+}
+
+.pro-feature-item {
+  line-height: 1.5;
+}
+.pro-feature-icon {
+  font-size: 1.1rem;
+}
+
+.pro-price-tag {
+  font-family: var(--font-arabic);
+  text-shadow: 0 0 15px var(--primary-glow);
+}
