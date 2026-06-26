@@ -9,6 +9,17 @@ const WolvesvilleGame = (() => {
   let nightPlayerIndex = 0;
   let activeNightPlayers = [];
   
+  // Distribution settings
+  let distributionMode = 'random'; // 'random' or 'manual'
+  let manualRoleCounts = {
+    villager: 0,
+    werewolf: 0,
+    seer: 0,
+    doctor: 0,
+    fool: 0,
+    serial_killer: 0
+  };
+
   // Night choices
   let werewolfTarget = null;
   let killerTarget = null;
@@ -36,7 +47,9 @@ const WolvesvilleGame = (() => {
     revealIndex = 0;
     nightPlayerIndex = 0;
     activeNightPlayers = [];
+    distributionMode = 'random';
     
+    initManualRoleCounts();
     resetNightChoices();
     renderLobbyScreen();
   };
@@ -46,6 +59,63 @@ const WolvesvilleGame = (() => {
     killerTarget = null;
     doctorTarget = null;
     seerTarget = null;
+  };
+
+  const getRandomRolesForCount = (count, isPro) => {
+    let roles = [];
+    if (isPro) {
+      if (count === 4) {
+        roles = ['werewolf', 'seer', 'fool', 'villager'];
+      } else if (count === 5) {
+        roles = ['werewolf', 'seer', 'doctor', 'fool', 'villager'];
+      } else if (count === 6) {
+        roles = ['werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
+      } else if (count === 7) {
+        roles = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
+      } else {
+        roles = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer'];
+        while (roles.length < count) {
+          roles.push('villager');
+        }
+      }
+    } else {
+      // Free mode: strictly free roles only!
+      if (count === 4) {
+        roles = ['werewolf', 'seer', 'villager', 'villager'];
+      } else if (count === 5) {
+        roles = ['werewolf', 'seer', 'doctor', 'villager', 'villager'];
+      } else if (count === 6) {
+        roles = ['werewolf', 'seer', 'doctor', 'villager', 'villager', 'villager'];
+      } else if (count === 7) {
+        roles = ['werewolf', 'werewolf', 'seer', 'doctor', 'villager', 'villager', 'villager'];
+      } else {
+        roles = ['werewolf', 'werewolf', 'seer', 'doctor'];
+        while (roles.length < count) {
+          roles.push('villager');
+        }
+      }
+    }
+    return roles;
+  };
+
+  const initManualRoleCounts = () => {
+    const isPro = window.isProUser();
+    const count = playersList.length;
+    const defaultRoles = getRandomRolesForCount(count, isPro);
+    
+    // Reset manual counts
+    manualRoleCounts = {
+      villager: 0,
+      werewolf: 0,
+      seer: 0,
+      doctor: 0,
+      fool: 0,
+      serial_killer: 0
+    };
+    
+    defaultRoles.forEach(r => {
+      manualRoleCounts[r]++;
+    });
   };
 
   const getRoleArabicName = (role) => {
@@ -75,27 +145,17 @@ const WolvesvilleGame = (() => {
   const assignRoles = () => {
     const numPlayers = playersList.length;
     let roles = [];
-    const isPro = window.isProUser();
 
-    // Determine roles based on player count (inspired by Wolvesville)
-    if (numPlayers === 4) {
-      roles = ['werewolf', 'seer', 'fool', 'villager'];
-    } else if (numPlayers === 5) {
-      roles = ['werewolf', 'seer', 'doctor', 'fool', 'villager'];
-    } else if (numPlayers === 6) {
-      roles = ['werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
-    } else if (numPlayers === 7) {
-      roles = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
+    if (distributionMode === 'random') {
+      const isPro = window.isProUser();
+      roles = getRandomRolesForCount(numPlayers, isPro);
     } else {
-      roles = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer'];
-      while (roles.length < numPlayers) {
-        roles.push('villager');
-      }
-    }
-
-    // Replace premium roles with villager if not Pro
-    if (!isPro) {
-      roles = roles.map(r => (r === 'fool' || r === 'serial_killer') ? 'villager' : r);
+      // Manual distribution
+      Object.keys(manualRoleCounts).forEach(role => {
+        for (let i = 0; i < manualRoleCounts[role]; i++) {
+          roles.push(role);
+        }
+      });
     }
 
     // Shuffle roles (Fisher-Yates)
@@ -116,19 +176,14 @@ const WolvesvilleGame = (() => {
     const isPro = window.isProUser();
     const numPlayers = playersList.length;
 
-    // Preview roles that will be in the game
-    let rolesPreview = [];
-    if (numPlayers === 4) {
-      rolesPreview = ['werewolf', 'seer', 'fool', 'villager'];
-    } else if (numPlayers === 5) {
-      rolesPreview = ['werewolf', 'seer', 'doctor', 'fool', 'villager'];
-    } else if (numPlayers === 6) {
-      rolesPreview = ['werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
-    } else if (numPlayers === 7) {
-      rolesPreview = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
-    } else {
-      rolesPreview = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
-    }
+    // Calculate current selected total in manual mode
+    const manualTotal = Object.values(manualRoleCounts).reduce((a, b) => a + b, 0);
+    const isMatching = manualTotal === numPlayers;
+
+    // Preview roles for random mode
+    let randomRoles = getRandomRolesForCount(numPlayers, isPro);
+    let randomCounts = { villager: 0, werewolf: 0, seer: 0, doctor: 0, fool: 0, serial_killer: 0 };
+    randomRoles.forEach(r => randomCounts[r]++);
 
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
@@ -137,38 +192,81 @@ const WolvesvilleGame = (() => {
           <h2>إعداد القرية الغامضة</h2>
         </div>
 
-        <div class="bomb-intro-box">
-          <span class="bomb-large-emoji">🐺</span>
-          <p class="intro-text">
-            لعبة الهويات السرية والمناورة. بعضكم ذئاب تلتهم القرويين ليلاً، وبعضكم قرويون يبحثون عن الحقيقة، وهناك محايدون يسعون لمصلحتهم الخاصة!
-          </p>
+        <div class="modes-toggle" style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+          <button class="btn ${distributionMode === 'random' ? 'btn-primary' : 'btn-outline'}" id="btn-mode-random" style="flex: 1; padding: 10px;">توزيع عشوائي 🎲</button>
+          <button class="btn ${distributionMode === 'manual' ? 'btn-primary' : 'btn-outline'}" id="btn-mode-manual" style="flex: 1; padding: 10px;">تحديد يدوي ⚙️</button>
         </div>
 
-        <div class="wolves-roles-container" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin: 20px 0; text-align: right;">
-          <h4 style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">الأدوار المشاركة في اللعبة (${numPlayers} لاعبين):</h4>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            ${[...new Set(rolesPreview)].map(role => {
+        <div class="wolves-roles-container" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin: 15px 0; text-align: right;">
+          <h4 style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
+            ${distributionMode === 'random' ? 'معاينة توزيع الأدوار التلقائي:' : 'حدد عدد اللاعبين لكل دور:'}
+          </h4>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${Object.keys(manualRoleCounts).map(role => {
               const isPremiumRole = role === 'fool' || role === 'serial_killer';
               const showLock = isPremiumRole && !isPro;
+              const currentCount = distributionMode === 'random' ? (randomCounts[role] || 0) : manualRoleCounts[role];
+
+              let controlHtml = "";
+              if (distributionMode === 'random') {
+                if (showLock) {
+                  controlHtml = `<span style="font-size: 0.8rem; color: var(--accent);">🔒 مغلق (نسخة برو)</span>`;
+                } else {
+                  controlHtml = `<span class="player-mini-badge" style="background: #222; border: 1px solid #333; margin: 0; min-width: 60px; text-align: center;">${currentCount} لاعب</span>`;
+                }
+              } else {
+                // Manual Mode Selector Controls
+                if (showLock) {
+                  controlHtml = `
+                    <div style="display: flex; align-items: center; gap: 5px; cursor: pointer;" class="premium-lock-clicker">
+                      <span style="font-size: 0.8rem; color: var(--accent);">🔒 اضغط للفتح</span>
+                    </div>
+                  `;
+                } else {
+                  controlHtml = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <button class="btn role-adjust-btn" data-role="${role}" data-action="minus" style="padding: 2px 10px; font-size: 1rem; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">-</button>
+                      <strong style="font-size: 1.1rem; min-width: 20px; text-align: center; color: #fff;">${currentCount}</strong>
+                      <button class="btn role-adjust-btn" data-role="${role}" data-action="plus" style="padding: 2px 10px; font-size: 1rem; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">+</button>
+                    </div>
+                  `;
+                }
+              }
+
               return `
-                <div class="wolves-role-preview-row ${showLock ? 'premium-locked-role' : ''}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; cursor: ${showLock ? 'pointer' : 'default'};">
-                  <span>${getRoleArabicName(role)}</span>
-                  <span style="font-size: 0.85rem; color: ${showLock ? 'var(--accent)' : 'var(--text-muted)'};">
-                    ${showLock ? '🔒 مقفل (برو)' : 'نشط ✔️'}
-                  </span>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.03);">
+                  <div style="display: flex; flex-direction: column;">
+                    <strong style="color: #fff;">${getRoleArabicName(role)}</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); max-width: 220px; margin-top: 2px; line-height: 1.3;">
+                      ${isPremiumRole && !isPro ? 'دور إضافي ممتع ومتقدم مقفول حالياً.' : getRoleGoal(role).split('.')[0]}
+                    </span>
+                  </div>
+                  <div>
+                    ${controlHtml}
+                  </div>
                 </div>
               `;
             }).join('')}
           </div>
+
+          ${distributionMode === 'manual' ? `
+            <div style="margin-top: 15px; padding: 12px; border-radius: 10px; text-align: center; font-size: 0.9rem; font-weight: 700;
+              background: ${isMatching ? 'rgba(0, 230, 118, 0.05)' : 'rgba(255, 23, 68, 0.05)'};
+              border: 1px solid ${isMatching ? 'rgba(0, 230, 118, 0.2)' : 'rgba(255, 23, 68, 0.2)'};
+              color: ${isMatching ? '#00e676' : 'var(--danger)'};">
+              ${isMatching ? `الأدوار متطابقة وجاهزة! (${manualTotal} من ${numPlayers} لاعبين) ✔️` : `يجب تحديد ${numPlayers} أدوار بالضبط! (محدد حالياً: ${manualTotal}) ⚠️`}
+            </div>
+          ` : ''}
+
           ${!isPro ? `
             <div style="margin-top: 12px; background: rgba(0, 242, 254, 0.05); border: 1px dashed rgba(0, 242, 254, 0.2); padding: 10px; border-radius: 8px; font-size: 0.8rem; text-align: center; color: #00f2fe; cursor: pointer;" id="btn-unlock-pro-roles">
-              💎 الأدوار المقفلة ستتحول لقرويين تلقائياً. اضغط لفتحها!
+              💎 الأدوار المقفلة (الأحمق والقاتل) تتطلب النسخة البرو. اضغط للفتح!
             </div>
           ` : ''}
         </div>
 
         <div class="active-players-list-simple">
-          <h4>القرويون المضافون (${numPlayers}):</h4>
+          <h4>القرويون المشاركون (${numPlayers}):</h4>
           <div class="players-badges-container">
             ${playersList.map(p => `
               <span class="player-mini-badge" style="background: ${p.color}">
@@ -179,13 +277,28 @@ const WolvesvilleGame = (() => {
         </div>
 
         <div class="game-controls">
-          <button class="btn btn-primary btn-large" id="btn-start-wolves-reveal">
+          <button class="btn btn-primary btn-large" id="btn-start-wolves-reveal" ${distributionMode === 'manual' && !isMatching ? 'disabled' : ''}>
             <span>ابدأ كشف الهويات السرية 👁️</span>
           </button>
         </div>
       </div>
     `;
 
+    // Attach mode switch event listeners
+    document.getElementById('btn-mode-random').addEventListener('click', () => {
+      Sounds.playClick();
+      distributionMode = 'random';
+      renderLobbyScreen();
+    });
+
+    document.getElementById('btn-mode-manual').addEventListener('click', () => {
+      Sounds.playClick();
+      distributionMode = 'manual';
+      initManualRoleCounts();
+      renderLobbyScreen();
+    });
+
+    // Attach premium upgrade modal trigger
     if (!isPro) {
       const unlockBtn = document.getElementById('btn-unlock-pro-roles');
       if (unlockBtn) {
@@ -196,8 +309,7 @@ const WolvesvilleGame = (() => {
         });
       }
 
-      // Allow clicking on locked roles to show upgrade
-      containerEl.querySelectorAll('.premium-locked-role').forEach(el => {
+      containerEl.querySelectorAll('.premium-lock-clicker').forEach(el => {
         el.addEventListener('click', () => {
           window.showProUpgradeModal(() => {
             setupGame();
@@ -206,11 +318,33 @@ const WolvesvilleGame = (() => {
       });
     }
 
+    // Attach plus/minus adjustment listeners for manual mode
+    if (distributionMode === 'manual') {
+      containerEl.querySelectorAll('.role-adjust-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          const role = btn.getAttribute('data-role');
+          const action = btn.getAttribute('data-action');
+
+          if (action === 'plus') {
+            // Cap total count to not exceed player count
+            if (manualTotal < numPlayers) {
+              manualRoleCounts[role]++;
+            } else {
+              showCustomAlert(`لا يمكنك إضافة أدوار أكثر من عدد اللاعبين (${numPlayers} لاعبين)!`);
+            }
+          } else if (action === 'minus') {
+            if (manualRoleCounts[role] > 0) {
+              manualRoleCounts[role]--;
+            }
+          }
+          renderLobbyScreen();
+        });
+      });
+    }
+
+    // Start reveal phase
     document.getElementById('btn-start-wolves-reveal').addEventListener('click', () => {
-      if (playersList.length < 4) {
-        showCustomAlert("يجب إضافة 4 لاعبين على الأقل للعب ذئاب قروية!");
-        return;
-      }
       Sounds.playClick();
       assignRoles();
       startRevealPhase();
@@ -226,7 +360,6 @@ const WolvesvilleGame = (() => {
   const renderRevealPassScreen = () => {
     const player = gamePlayers[revealIndex];
     
-    // Pure neutral dark pass screen to avoid glow reflection
     containerEl.innerHTML = `
       <div class="game-card wolves-night-view text-center" style="background: #0d0d0d; border: 1px solid #1a1a1a; min-height: 480px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff;">
         <span style="font-size: 3rem; margin-bottom: 20px;">📲</span>
@@ -252,13 +385,11 @@ const WolvesvilleGame = (() => {
     const roleName = getRoleArabicName(player.role);
     const roleGoal = getRoleGoal(player.role);
     
-    // Check if there are other wolves in the game
     let wolfPartners = [];
     if (player.role === 'werewolf') {
       wolfPartners = gamePlayers.filter(p => p.role === 'werewolf' && p.id !== player.id).map(p => p.name);
     }
 
-    // Completely dark themed role card to avoid full-screen light reflection on face/glasses
     containerEl.innerHTML = `
       <div class="game-card wolves-night-view text-center" style="background: #050505; border: 2px solid #111; min-height: 480px; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; color: #e0e0e0;">
         <div>
@@ -310,7 +441,6 @@ const WolvesvilleGame = (() => {
   const renderNightIntroScreen = () => {
     Sounds.playFail();
 
-    // Dark screen instructing everyone to close eyes
     containerEl.innerHTML = `
       <div class="game-card wolves-night-view text-center" style="background: #000; border: 1px solid #111; min-height: 480px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; padding: 20px;">
         <span style="font-size: 4rem; margin-bottom: 25px; filter: grayscale(1);">🌙</span>

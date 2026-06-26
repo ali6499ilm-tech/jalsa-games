@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalsa-cache-v6';
+const CACHE_NAME = 'jalsa-cache-v7';
 const ASSETS = [
   './',
   './index.html',
