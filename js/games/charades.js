@@ -13,7 +13,7 @@ const CharadesGame = (() => {
   let roundScore = 0;
   let timeLeft = 60;
   let timerInterval = null;
-  let selectedCategory = "عشوائي"; // default
+  let selectedCategories = ["عشوائي"]; // default
   
   let roundWordsLog = []; // list of { word, status: 'correct' / 'skipped' }
   let containerEl = null;
@@ -28,7 +28,7 @@ const CharadesGame = (() => {
     teamA.score = 0;
     teamB.score = 0;
     currentRound = 1;
-    selectedCategory = "عشوائي";
+    selectedCategories = ["عشوائي"];
     
     distributeTeams();
     setupCategorySelection();
@@ -106,11 +106,12 @@ const CharadesGame = (() => {
         <div class="category-selection-box">
           <h4>اختر تصنيف الكلمات:</h4>
           <div class="category-buttons-grid">
-            <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
+            <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.charades).map(cat => {
               const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "حيوانات وأشياء": "🦁", "أفعال وحركات": "🏃‍♂️", "كرتون وأفلام": "🎬", "ألعاب وتكنولوجيا": "🎮", "أمثال وتعبيرات": "💬", "ماركات وشركات": "🏷️", "أماكن ومعالم": "🏛️" };
               const isLocked = window.isCategoryLocked('charades', cat);
-              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+              const isActive = selectedCategories.includes(cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''} ${isActive ? 'active' : ''}" data-cat="${cat}">
                 ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
               </button>`;
             }).join('')}
@@ -151,19 +152,29 @@ const CharadesGame = (() => {
         const cat = btn.getAttribute('data-cat');
         if (window.isCategoryLocked('charades', cat)) {
           window.showProUpgradeModal(() => {
+            if (!selectedCategories.includes(cat)) {
+              selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+              selectedCategories.push(cat);
+            }
             setupCategorySelection();
-            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
-            updatedButtons.forEach(b => {
-              if (b.getAttribute('data-cat') === cat) {
-                b.click();
-              }
-            });
           });
           return;
         }
-        catButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedCategory = cat;
+        
+        if (cat === "عشوائي") {
+          selectedCategories = ["عشوائي"];
+        } else {
+          selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+          if (selectedCategories.includes(cat)) {
+            selectedCategories = selectedCategories.filter(c => c !== cat);
+          } else {
+            selectedCategories.push(cat);
+          }
+          if (selectedCategories.length === 0) {
+            selectedCategories = ["عشوائي"];
+          }
+        }
+        setupCategorySelection();
       });
     });
 
@@ -181,21 +192,30 @@ const CharadesGame = (() => {
   };
 
   const prepareWords = () => {
-    let sourceWords = [];
-    if (selectedCategory === "عشوائي") {
+    let chosenCats = [];
+    if (selectedCategories.includes("عشوائي") || selectedCategories.length === 0) {
       let keys = Object.keys(WordBank.charades);
       if (!window.isProUser()) {
         keys = keys.filter(k => !window.isCategoryLocked('charades', k));
       }
-      keys.forEach(key => {
-        sourceWords = sourceWords.concat(WordBank.charades[key].words);
-      });
+      chosenCats = keys;
     } else {
-      const cat = WordBank.charades[selectedCategory];
-      if (cat) sourceWords = cat.words;
+      chosenCats = selectedCategories;
+    }
+
+    let sourceWords = [];
+    chosenCats.forEach(cat => {
+      if (WordBank.charades[cat] && WordBank.charades[cat].words) {
+        sourceWords = sourceWords.concat(WordBank.charades[cat].words);
+      }
+    });
+
+    if (sourceWords.length === 0) {
+      sourceWords = WordBank.charades["فواكه وخضروات"].words;
     }
     
-    wordList = [...sourceWords].sort(() => Math.random() - 0.5);
+    const unplayedWords = WordHistoryManager.getUnplayedItems('charades', 'all_words', sourceWords);
+    wordList = [...unplayedWords].sort(() => Math.random() - 0.5);
     currentWordIndex = 0;
   };
 
@@ -268,6 +288,7 @@ const CharadesGame = (() => {
       prepareWords();
     }
     const currentWord = wordList[currentWordIndex];
+    WordHistoryManager.markAsPlayed('charades', 'all_words', currentWord);
 
     containerEl.innerHTML = `
       <div class="game-card game-card-charades animate-fade-in text-center">
@@ -483,8 +504,19 @@ const CharadesGame = (() => {
     clearInterval(timerInterval);
   };
 
+  const restart = () => {
+    cleanup();
+    currentRound = 1;
+    currentTeam = teamA;
+    scoreA = 0;
+    scoreB = 0;
+    prepareWords();
+    startNewRound();
+  };
+
   return {
     init,
-    cleanup
+    cleanup,
+    restart
   };
 })();

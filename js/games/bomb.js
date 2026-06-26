@@ -11,7 +11,7 @@ const BombGame = (() => {
   let startTime = 0;
   let containerEl = null;
   let onExitCallback = null;
-  let selectedCategory = "عشوائي";
+  let selectedCategories = ["عشوائي"];
 
   const init = (players, container, onExit) => {
     playersList = players;
@@ -34,7 +34,7 @@ const BombGame = (() => {
     const activePlayers = gamePlayers.filter(p => p.active);
     currentPlayerIndex = gamePlayers.findIndex(p => p.id === activePlayers[0].id);
 
-    selectedCategory = "عشوائي";
+    selectedCategories = ["عشوائي"];
     renderLobbyScreen();
   };
 
@@ -57,11 +57,12 @@ const BombGame = (() => {
         <div class="category-selection-box">
           <h4>اختر تصنيف الأسئلة:</h4>
           <div class="category-buttons-grid">
-            <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
+            <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.bomb).map(cat => {
-              const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "تصنيفات أخرى": "🏷️" };
+              const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "ألعاب وتكنولوجيا": "🎮", "أطعمة ومشروبات": "🍔", "ماركات وشركات": "🏷️", "بلدان وعواصم": "🗺️", "تصنيفات أخرى": "🏷️" };
               const isLocked = window.isCategoryLocked('bomb', cat);
-              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+              const isActive = selectedCategories.includes(cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''} ${isActive ? 'active' : ''}" data-cat="${cat}">
                 ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
               </button>`;
             }).join('')}
@@ -95,19 +96,29 @@ const BombGame = (() => {
         const cat = btn.getAttribute('data-cat');
         if (window.isCategoryLocked('bomb', cat)) {
           window.showProUpgradeModal(() => {
+            if (!selectedCategories.includes(cat)) {
+              selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+              selectedCategories.push(cat);
+            }
             renderLobbyScreen();
-            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
-            updatedButtons.forEach(b => {
-              if (b.getAttribute('data-cat') === cat) {
-                b.click();
-              }
-            });
           });
           return;
         }
-        catButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedCategory = cat;
+        
+        if (cat === "عشوائي") {
+          selectedCategories = ["عشوائي"];
+        } else {
+          selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+          if (selectedCategories.includes(cat)) {
+            selectedCategories = selectedCategories.filter(c => c !== cat);
+          } else {
+            selectedCategories.push(cat);
+          }
+          if (selectedCategories.length === 0) {
+            selectedCategories = ["عشوائي"];
+          }
+        }
+        renderLobbyScreen();
       });
     });
 
@@ -115,19 +126,32 @@ const BombGame = (() => {
       Sounds.playClick();
       
       // Select category item based on choice
-      let availableCats = [];
-      if (selectedCategory === "عشوائي") {
+      let chosenCats = [];
+      if (selectedCategories.includes("عشوائي") || selectedCategories.length === 0) {
         let keys = Object.keys(WordBank.bomb);
         if (!window.isProUser()) {
           keys = keys.filter(k => !window.isCategoryLocked('bomb', k));
         }
-        keys.forEach(key => {
-          availableCats = availableCats.concat(WordBank.bomb[key]);
-        });
+        chosenCats = keys;
       } else {
-        availableCats = WordBank.bomb[selectedCategory];
+        chosenCats = selectedCategories;
       }
-      currentCategory = availableCats[Math.floor(Math.random() * availableCats.length)];
+
+      let allPrompts = [];
+      chosenCats.forEach(cat => {
+        if (WordBank.bomb[cat]) {
+          allPrompts = allPrompts.concat(WordBank.bomb[cat]);
+        }
+      });
+
+      if (allPrompts.length === 0) {
+        allPrompts = WordBank.bomb["فواكه وخضروات"];
+      }
+
+      // Smart played history check
+      const unplayedPrompts = WordHistoryManager.getUnplayedItems('bomb', 'all_prompts', allPrompts);
+      currentCategory = unplayedPrompts[Math.floor(Math.random() * unplayedPrompts.length)];
+      WordHistoryManager.markAsPlayed('bomb', 'all_prompts', currentCategory);
 
       // Set random duration (25 to 45 seconds)
       maxDuration = Math.floor(Math.random() * 20) + 25;
@@ -360,8 +384,48 @@ const BombGame = (() => {
     clearInterval(timerInterval);
   };
 
+  const restart = () => {
+    cleanup();
+    // Reset all players
+    gamePlayers.forEach(p => p.active = true);
+    currentPlayerIndex = gamePlayers.findIndex(p => p.active);
+    
+    // Choose word/prompt and start directly
+    let chosenCats = [];
+    if (selectedCategories.includes("عشوائي") || selectedCategories.length === 0) {
+      let keys = Object.keys(WordBank.bomb);
+      if (!window.isProUser()) {
+        keys = keys.filter(k => !window.isCategoryLocked('bomb', k));
+      }
+      chosenCats = keys;
+    } else {
+      chosenCats = selectedCategories;
+    }
+
+    let allPrompts = [];
+    chosenCats.forEach(cat => {
+      if (WordBank.bomb[cat]) {
+        allPrompts = allPrompts.concat(WordBank.bomb[cat]);
+      }
+    });
+
+    if (allPrompts.length === 0) {
+      allPrompts = WordBank.bomb["فواكه وخضروات"];
+    }
+
+    const unplayedPrompts = WordHistoryManager.getUnplayedItems('bomb', 'all_prompts', allPrompts);
+    currentCategory = unplayedPrompts[Math.floor(Math.random() * unplayedPrompts.length)];
+    WordHistoryManager.markAsPlayed('bomb', 'all_prompts', currentCategory);
+
+    maxDuration = Math.floor(Math.random() * 20) + 25;
+    timerVal = maxDuration;
+    
+    startCountdown();
+  };
+
   return {
     init,
-    cleanup
+    cleanup,
+    restart
   };
 })();

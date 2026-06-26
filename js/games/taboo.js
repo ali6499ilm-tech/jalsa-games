@@ -13,7 +13,7 @@ const TabooGame = (() => {
   let roundScore = 0;
   let timeLeft = 60;
   let timerInterval = null;
-  let selectedCategory = "عشوائي"; // default
+  let selectedCategories = ["عشوائي"]; // default
   
   let roundWordsLog = []; // list of { word, status: 'correct' / 'skipped' }
   let containerEl = null;
@@ -28,7 +28,7 @@ const TabooGame = (() => {
     teamA.score = 0;
     teamB.score = 0;
     currentRound = 1;
-    selectedCategory = "عشوائي";
+    selectedCategories = ["عشوائي"];
     
     distributeTeams();
     setupCategorySelection();
@@ -106,11 +106,12 @@ const TabooGame = (() => {
         <div class="category-selection-box">
           <h4>اختر تصنيف الكلمات:</h4>
           <div class="category-buttons-grid">
-            <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
+            <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.taboo).map(cat => {
-              const icons = { "أشياء عامة": "📦", "أجهزة وتكنولوجيا": "💻", "في المنزل": "🏠", "طعام وشراب": "🍔", "أماكن ومعالم": "🏛️", "مهن ووظائف": "💼", "ماركات وشركات": "🏷️", "حيوانات وحشرات": "🐜" };
+              const icons = { "أشياء عامة": "📦", "أجهزة وتكنولوجيا": "💻", "طعام وشراب": "🍔", "أماكن ومعالم": "🏛️", "مهن ووظائف": "👨‍⚕️", "ماركات وشركات": "🏷️", "حيوانات وحشرات": "🦁" };
               const isLocked = window.isCategoryLocked('taboo', cat);
-              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+              const isActive = selectedCategories.includes(cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''} ${isActive ? 'active' : ''}" data-cat="${cat}">
                 ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
               </button>`;
             }).join('')}
@@ -151,19 +152,29 @@ const TabooGame = (() => {
         const cat = btn.getAttribute('data-cat');
         if (window.isCategoryLocked('taboo', cat)) {
           window.showProUpgradeModal(() => {
+            if (!selectedCategories.includes(cat)) {
+              selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+              selectedCategories.push(cat);
+            }
             setupCategorySelection();
-            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
-            updatedButtons.forEach(b => {
-              if (b.getAttribute('data-cat') === cat) {
-                b.click();
-              }
-            });
           });
           return;
         }
-        catButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedCategory = cat;
+        
+        if (cat === "عشوائي") {
+          selectedCategories = ["عشوائي"];
+        } else {
+          selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+          if (selectedCategories.includes(cat)) {
+            selectedCategories = selectedCategories.filter(c => c !== cat);
+          } else {
+            selectedCategories.push(cat);
+          }
+          if (selectedCategories.length === 0) {
+            selectedCategories = ["عشوائي"];
+          }
+        }
+        setupCategorySelection();
       });
     });
 
@@ -181,21 +192,30 @@ const TabooGame = (() => {
   };
 
   const prepareWords = () => {
-    let sourceWords = [];
-    if (selectedCategory === "عشوائي") {
+    let chosenCats = [];
+    if (selectedCategories.includes("عشوائي") || selectedCategories.length === 0) {
       let keys = Object.keys(WordBank.taboo);
       if (!window.isProUser()) {
         keys = keys.filter(k => !window.isCategoryLocked('taboo', k));
       }
-      keys.forEach(key => {
-        sourceWords = sourceWords.concat(WordBank.taboo[key]);
-      });
+      chosenCats = keys;
     } else {
-      const catWords = WordBank.taboo[selectedCategory];
-      if (catWords) sourceWords = catWords;
+      chosenCats = selectedCategories;
+    }
+
+    let sourceWords = [];
+    chosenCats.forEach(cat => {
+      if (WordBank.taboo[cat]) {
+        sourceWords = sourceWords.concat(WordBank.taboo[cat]);
+      }
+    });
+
+    if (sourceWords.length === 0) {
+      sourceWords = WordBank.taboo["أشياء عامة"];
     }
     
-    wordList = [...sourceWords].sort(() => Math.random() - 0.5);
+    const unplayedWords = WordHistoryManager.getUnplayedItems('taboo', 'all_cards', sourceWords);
+    wordList = [...unplayedWords].sort(() => Math.random() - 0.5);
     currentWordIndex = 0;
   };
 
@@ -268,6 +288,7 @@ const TabooGame = (() => {
       prepareWords();
     }
     const currentWordItem = wordList[currentWordIndex];
+    WordHistoryManager.markAsPlayed('taboo', 'all_cards', currentWordItem);
 
     containerEl.innerHTML = `
       <div class="game-card game-card-charades animate-fade-in text-center">
@@ -495,8 +516,18 @@ const TabooGame = (() => {
     clearInterval(timerInterval);
   };
 
+  const restart = () => {
+    cleanup();
+    currentRound = 1;
+    teamA.score = 0;
+    teamB.score = 0;
+    prepareWords();
+    startNewRound();
+  };
+
   return {
     init,
-    cleanup
+    cleanup,
+    restart
   };
 })();

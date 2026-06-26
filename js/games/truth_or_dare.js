@@ -34,8 +34,13 @@ const TruthOrDareGame = (() => {
   };
 
   const preparePrompts = () => {
-    truthQuestions = [...WordBank.truth_or_dare.truth].sort(() => Math.random() - 0.5);
-    dareChallenges = [...WordBank.truth_or_dare.dare].sort(() => Math.random() - 0.5);
+    const allTruths = WordBank.truth_or_dare.truth || [];
+    const allDares = WordBank.truth_or_dare.dare || [];
+    const unplayedTruths = WordHistoryManager.getUnplayedItems('truth_or_dare', 'truth', allTruths);
+    const unplayedDares = WordHistoryManager.getUnplayedItems('truth_or_dare', 'dare', allDares);
+
+    truthQuestions = [...unplayedTruths].sort(() => Math.random() - 0.5);
+    dareChallenges = [...unplayedDares].sort(() => Math.random() - 0.5);
   };
 
   const renderTurnIntro = () => {
@@ -124,9 +129,11 @@ const TruthOrDareGame = (() => {
 
     if (type === 'truth') {
       promptText = truthQuestions[currentTruthIndex % truthQuestions.length];
+      WordHistoryManager.markAsPlayed('truth_or_dare', 'truth', promptText);
       currentTruthIndex++;
     } else {
       promptText = dareChallenges[currentDareIndex % dareChallenges.length];
+      WordHistoryManager.markAsPlayed('truth_or_dare', 'dare', promptText);
       currentDareIndex++;
     }
 
@@ -261,9 +268,26 @@ const TruthOrDareGame = (() => {
     // No timers to clean up in this game
   };
 
+  const restart = () => {
+    playersList = [...playersList].sort(() => Math.random() - 0.5);
+    playerScores = {};
+    playersList.forEach(p => {
+      playerScores[p.id] = 0;
+    });
+
+    currentPlayerIndex = 0;
+    roundNum = 1;
+    currentTruthIndex = 0;
+    currentDareIndex = 0;
+
+    preparePrompts();
+    renderTurnIntro();
+  };
+
   return {
     init,
-    cleanup
+    cleanup,
+    restart
   };
 })();
 // Register globally

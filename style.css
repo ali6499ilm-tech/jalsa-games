@@ -1429,6 +1429,14 @@ p {
 .btn-top-exit:active {
   background: rgba(255, 23, 68, 0.1);
 }
+.btn-top-restart {
+  border-color: rgba(0, 230, 118, 0.2);
+  color: #00e676;
+}
+.btn-top-restart:active {
+  background: rgba(0, 230, 118, 0.1);
+}
+
 
 /* Team Manual Swapping */
 .team-player-row-card {

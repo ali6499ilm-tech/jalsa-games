@@ -28,7 +28,9 @@ const WouldYouRatherGame = (() => {
   };
 
   const prepareQuestions = () => {
-    questionsList = [...WordBank.would_you_rather].sort(() => Math.random() - 0.5);
+    const allQuestions = WordBank.would_you_rather || [];
+    const unplayed = WordHistoryManager.getUnplayedItems('would_you_rather', 'default', allQuestions);
+    questionsList = [...unplayed].sort(() => Math.random() - 0.5);
   };
 
   const renderTurnIntro = () => {
@@ -72,6 +74,7 @@ const WouldYouRatherGame = (() => {
   const renderPromptScreen = () => {
     const activePlayer = playersList[currentPlayerIndex];
     const question = questionsList[currentQuestionIndex % questionsList.length];
+    WordHistoryManager.markAsPlayed('would_you_rather', 'default', question);
 
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center" style="display: flex; flex-direction: column; min-height: 480px;">
@@ -214,8 +217,20 @@ const WouldYouRatherGame = (() => {
     // No timers to clean up in this game
   };
 
+  const restart = () => {
+    playersList = [...playersList].sort(() => Math.random() - 0.5);
+    currentQuestionIndex = 0;
+    currentPlayerIndex = 0;
+    roundNum = 1;
+    selectedOption = null;
+
+    prepareQuestions();
+    renderTurnIntro();
+  };
+
   return {
     init,
-    cleanup
+    cleanup,
+    restart
   };
 })();

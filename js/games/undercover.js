@@ -7,7 +7,8 @@ const UndercoverGame = (() => {
   let isWordVisible = false;
   let containerEl = null;
   let onExitCallback = null;
-  let selectedCategory = "عشوائي";
+  let selectedCategories = ["عشوائي"];
+  let currentRoundStarterId = null;
 
   const init = (players, container, onExit) => {
     playersList = players;
@@ -19,7 +20,8 @@ const UndercoverGame = (() => {
   const setupGame = () => {
     revealIndex = 0;
     isWordVisible = false;
-    selectedCategory = "عشوائي";
+    selectedCategories = ["عشوائي"];
+    currentRoundStarterId = null;
     renderLobbyScreen();
   };
 
@@ -41,11 +43,12 @@ const UndercoverGame = (() => {
         <div class="category-selection-box">
           <h4>اختر تصنيف الكلمات:</h4>
           <div class="category-buttons-grid">
-            <button class="cat-select-btn active" data-cat="عشوائي">🎲 عشوائي</button>
+            <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
             ${Object.keys(WordBank.undercover).map(cat => {
               const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "أشياء عامة": "📦", "حيوانات وطيور": "🦁", "بلدان وعواصم": "🗺️", "ألعاب وتكنولوجيا": "🎮", "أطعمة ومشروبات": "🍔", "ماركات وشركات": "🏷️", "أماكن ومعالم": "🏛️" };
               const isLocked = window.isCategoryLocked('undercover', cat);
-              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''}" data-cat="${cat}">
+              const isActive = selectedCategories.includes(cat);
+              return `<button class="cat-select-btn ${isLocked ? 'premium-locked' : ''} ${isActive ? 'active' : ''}" data-cat="${cat}">
                 ${isLocked ? '🔒 ' : ''}${icons[cat] || "🏷️"} ${cat}
               </button>`;
             }).join('')}
@@ -79,19 +82,29 @@ const UndercoverGame = (() => {
         const cat = btn.getAttribute('data-cat');
         if (window.isCategoryLocked('undercover', cat)) {
           window.showProUpgradeModal(() => {
+            if (!selectedCategories.includes(cat)) {
+              selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+              selectedCategories.push(cat);
+            }
             renderLobbyScreen();
-            const updatedButtons = containerEl.querySelectorAll('.cat-select-btn');
-            updatedButtons.forEach(b => {
-              if (b.getAttribute('data-cat') === cat) {
-                b.click();
-              }
-            });
           });
           return;
         }
-        catButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedCategory = cat;
+        
+        if (cat === "عشوائي") {
+          selectedCategories = ["عشوائي"];
+        } else {
+          selectedCategories = selectedCategories.filter(c => c !== "عشوائي");
+          if (selectedCategories.includes(cat)) {
+            selectedCategories = selectedCategories.filter(c => c !== cat);
+          } else {
+            selectedCategories.push(cat);
+          }
+          if (selectedCategories.length === 0) {
+            selectedCategories = ["عشوائي"];
+          }
+        }
+        renderLobbyScreen();
       });
     });
 
@@ -102,20 +115,36 @@ const UndercoverGame = (() => {
   };
 
   const startGamePlay = () => {
-    // 1. Choose a word pair based on category selection
-    let categoryKey = selectedCategory;
-    if (selectedCategory === "عشوائي") {
+    // 1. Collect all candidate categories
+    let chosenCats = [];
+    if (selectedCategories.includes("عشوائي") || selectedCategories.length === 0) {
       let keys = Object.keys(WordBank.undercover);
       if (!window.isProUser()) {
         keys = keys.filter(k => !window.isCategoryLocked('undercover', k));
       }
-      categoryKey = keys[Math.floor(Math.random() * keys.length)];
+      chosenCats = keys;
+    } else {
+      chosenCats = selectedCategories;
     }
 
-    const pairs = WordBank.undercover[categoryKey];
-    currentWordPair = pairs[Math.floor(Math.random() * pairs.length)];
+    // 2. Gather all pairs from chosen categories
+    let allPairs = [];
+    chosenCats.forEach(cat => {
+      if (WordBank.undercover[cat]) {
+        allPairs = allPairs.concat(WordBank.undercover[cat]);
+      }
+    });
 
-    // 2. Assign roles
+    if (allPairs.length === 0) {
+      allPairs = WordBank.undercover["فواكه وخضروات"];
+    }
+
+    // 3. Get unplayed pairs using WordHistoryManager
+    const unplayedPairs = WordHistoryManager.getUnplayedItems('undercover', 'all_cats', allPairs);
+    currentWordPair = unplayedPairs[Math.floor(Math.random() * unplayedPairs.length)];
+    WordHistoryManager.markAsPlayed('undercover', 'all_cats', currentWordPair);
+
+    // 4. Assign roles
     const numPlayers = playersList.length;
     let roles = [];
     
@@ -128,8 +157,11 @@ const UndercoverGame = (() => {
       }
     }
 
-    // Shuffle roles
-    roles.sort(() => Math.random() - 0.5);
+    // Shuffle roles using Fisher-Yates for unbiased randomness
+    for (let i = roles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [roles[i], roles[j]] = [roles[j], roles[i]];
+    }
 
     // Create game players list
     gamePlayers = playersList.map((p, index) => {
@@ -153,6 +185,15 @@ const UndercoverGame = (() => {
         active: true
       };
     });
+
+    // 5. Select starting player once for this game (random and non-repeating)
+    const lastStarterId = localStorage.getItem('jalsa_undercover_last_starter_id');
+    const activePlayers = gamePlayers.filter(p => p.active);
+    const starterCandidates = activePlayers.filter(p => String(p.id) !== String(lastStarterId));
+    const finalCandidates = starterCandidates.length > 0 ? starterCandidates : activePlayers;
+    const starter = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
+    currentRoundStarterId = starter.id;
+    localStorage.setItem('jalsa_undercover_last_starter_id', starter.id);
 
     revealIndex = 0;
     isWordVisible = false;
@@ -230,8 +271,19 @@ const UndercoverGame = (() => {
   };
 
   const renderDiscussionScreen = () => {
-    const activePlayers = gamePlayers.filter(p => p.active);
-    const starter = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+    let starter = gamePlayers.find(p => p.id === currentRoundStarterId && p.active);
+    if (!starter) {
+      let idx = gamePlayers.findIndex(p => p.id === currentRoundStarterId);
+      if (idx === -1) idx = 0;
+      let nextIdx = (idx + 1) % gamePlayers.length;
+      let count = 0;
+      while (!gamePlayers[nextIdx].active && count < gamePlayers.length) {
+        nextIdx = (nextIdx + 1) % gamePlayers.length;
+        count++;
+      }
+      starter = gamePlayers[nextIdx];
+      currentRoundStarterId = starter.id;
+    }
 
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in">
@@ -472,8 +524,15 @@ const UndercoverGame = (() => {
     // Undercover doesn't run background intervals, but we supply it for completeness
   };
 
+  const restart = () => {
+    revealIndex = 0;
+    isWordVisible = false;
+    startGamePlay();
+  };
+
   return {
     init,
-    cleanup
+    cleanup,
+    restart
   };
 })();

@@ -237,6 +237,80 @@ window.showProUpgradeModal = (onSuccess) => {
   });
 };
 
+// Smart played history manager to prevent repetition
+const WordHistoryManager = (() => {
+  let history = {}; // Format: { gameId: { categoryName: [played_item_strings/hashes/indices] } }
+
+  const init = () => {
+    const stored = localStorage.getItem('jalsa_word_history');
+    if (stored) {
+      try {
+        history = JSON.parse(stored);
+      } catch (e) {
+        history = {};
+      }
+    }
+  };
+
+  const save = () => {
+    localStorage.setItem('jalsa_word_history', JSON.stringify(history));
+  };
+
+  const getUnplayedItems = (gameId, categoryName, allItems) => {
+    if (!history[gameId]) history[gameId] = {};
+    if (!history[gameId][categoryName]) history[gameId][categoryName] = [];
+
+    const playedList = history[gameId][categoryName];
+    let unplayed = allItems.filter(item => {
+      const itemKey = getItemKey(item);
+      return !playedList.includes(itemKey);
+    });
+
+    if (unplayed.length === 0) {
+      history[gameId][categoryName] = [];
+      save();
+      unplayed = allItems;
+    }
+    return unplayed;
+  };
+
+  const markAsPlayed = (gameId, categoryName, item) => {
+    if (!history[gameId]) history[gameId] = {};
+    if (!history[gameId][categoryName]) history[gameId][categoryName] = [];
+
+    const itemKey = getItemKey(item);
+    if (!history[gameId][categoryName].includes(itemKey)) {
+      history[gameId][categoryName].push(itemKey);
+      save();
+    }
+  };
+
+  const clearHistory = (gameId) => {
+    if (gameId) {
+      delete history[gameId];
+    } else {
+      history = {};
+    }
+    save();
+  };
+
+  const getItemKey = (item) => {
+    if (typeof item === 'string') return item;
+    if (item.civilian && item.undercover) return `${item.civilian}_${item.undercover}`;
+    if (item.word) return item.word;
+    if (item.name) return item.name;
+    if (item.a && item.b) return `${item.a}_${item.b}`;
+    return JSON.stringify(item);
+  };
+
+  return {
+    init,
+    getUnplayedItems,
+    markAsPlayed,
+    clearHistory
+  };
+})();
+
 const App = (() => {
   // 1. App State
   let players = [];
@@ -334,6 +408,7 @@ const App = (() => {
       
       // Top Navigation during gameplay
       btnGameplayExit: document.getElementById('btn-gameplay-exit'),
+      btnGameplayRestart: document.getElementById('btn-gameplay-restart'),
       
       // Player management
       playerNameInput: document.getElementById('player-name-input'),
@@ -356,6 +431,7 @@ const App = (() => {
       gameplayContainer: document.getElementById('gameplay-container')
     };
 
+    WordHistoryManager.init();
     loadPlayers();
     Billing.init();
     updateProButtons();
@@ -388,6 +464,14 @@ const App = (() => {
     });
     currentScreenId = screenId;
     window.scrollTo(0, 0);
+
+    if (elements.btnGameplayRestart) {
+      if (screenId === 'screen-gameplay') {
+        elements.btnGameplayRestart.style.display = 'inline-flex';
+      } else {
+        elements.btnGameplayRestart.style.display = 'none';
+      }
+    }
 
     if (pushState) {
       window.history.pushState({ screen: screenId }, '');
@@ -444,6 +528,15 @@ const App = (() => {
       showCustomConfirm("هل تريد إنهاء اللعب والعودة لقائمة اختيار الألعاب؟ سيتم إلغاء الجولة الحالية.", () => {
         window.history.back();
       });
+    });
+
+    elements.btnGameplayRestart.addEventListener('click', () => {
+      if (activeGame && typeof activeGame.restart === 'function') {
+        showCustomConfirm("هل تريد إعادة اللعب بنفس الخيارات واللاعبين؟ سيتم تصفير الجولة الحالية والبدء من جديد.", () => {
+          Sounds.playClick();
+          activeGame.restart();
+        });
+      }
     });
 
     // Player addition logic

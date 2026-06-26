@@ -33,7 +33,9 @@ const FiveSecondsGame = (() => {
   };
 
   const prepareChallenges = () => {
-    challenges = [...WordBank.five_seconds].sort(() => Math.random() - 0.5);
+    const allChallenges = WordBank.five_seconds || [];
+    const unplayed = WordHistoryManager.getUnplayedItems('five_seconds', 'default', allChallenges);
+    challenges = [...unplayed].sort(() => Math.random() - 0.5);
   };
 
   const renderTurnIntro = () => {
@@ -76,6 +78,7 @@ const FiveSecondsGame = (() => {
   const renderGameplayScreen = () => {
     const activePlayer = playersList[currentPlayerIndex];
     const challengeText = challenges[currentChallengeIndex % challenges.length];
+    WordHistoryManager.markAsPlayed('five_seconds', 'default', challengeText);
     currentChallengeIndex++;
     
     timeLeft = 5;
@@ -266,9 +269,26 @@ const FiveSecondsGame = (() => {
     clearInterval(timerInterval);
   };
 
+  const restart = () => {
+    cleanup();
+    playersList = [...playersList].sort(() => Math.random() - 0.5);
+    playerScores = {};
+    playersList.forEach(p => {
+      playerScores[p.id] = 0;
+    });
+
+    currentPlayerIndex = 0;
+    roundNum = 1;
+    currentChallengeIndex = 0;
+
+    prepareChallenges();
+    renderTurnIntro();
+  };
+
   return {
     init,
-    cleanup
+    cleanup,
+    restart
   };
 })();
 // Register globally
