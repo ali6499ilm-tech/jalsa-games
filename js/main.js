@@ -901,7 +901,20 @@ window.addEventListener('DOMContentLoaded', () => {
   // Register Service Worker for Jalsa PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered successfully!', reg))
+      .then(reg => {
+        console.log('Service Worker registered successfully!', reg);
+        // Force checking for updates immediately on page load
+        reg.update();
+      })
       .catch(err => console.error('Service Worker registration failed:', err));
+
+    // Reload the page automatically when a new service worker takes control
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   }
 });

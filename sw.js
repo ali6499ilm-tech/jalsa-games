@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalsa-cache-v3';
+const CACHE_NAME = 'jalsa-cache-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -19,11 +19,22 @@ const ASSETS = [
   './js/main.js'
 ];
 
-// Install Event - cache all assets
+// Install Event - cache all assets with cache-busting reload
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
+      const cachePromises = ASSETS.map((url) => {
+        // Force network request bypassing browser HTTP cache
+        return fetch(url, { cache: 'reload' })
+          .then((response) => {
+            if (response.ok) {
+              return cache.put(url, response);
+            }
+            throw new Error(`Failed to fetch ${url}`);
+          })
+          .catch((err) => console.error('Cache put error:', err));
+      });
+      return Promise.all(cachePromises);
     })
   );
   self.skipWaiting();
