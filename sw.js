@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalsa-cache-v2';
+const CACHE_NAME = 'jalsa-cache-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -45,11 +45,26 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch Event - network falling back to cache (or cache first for assets)
+// Fetch Event - Network First falling back to Cache
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') {
+    return;
+  }
+
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      return cachedResponse || fetch(e.request);
-    })
+    fetch(e.request)
+      .then((response) => {
+        // Cache the newly fetched resource if valid and same-origin
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        return caches.match(e.request);
+      })
   );
 });
