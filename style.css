@@ -1614,3 +1614,36 @@ p {
     opacity: 1;
   }
 }
+
+/* Wolvesville (ذئاب قروية) Dark Style Rules */
+.wolves-night-view {
+  background: #000000 !important;
+  color: #e0e0e0 !important;
+  border-color: #111111 !important;
+}
+
+.wolves-night-view .btn-outline {
+  border-color: #222222 !important;
+  background: #0a0a0a !important;
+  color: #999999 !important;
+}
+
+.wolves-night-view .btn-outline:active {
+  background: #151515 !important;
+  color: #ffffff !important;
+}
+
+.wolves-role-preview-row.premium-locked-role {
+  opacity: 0.6;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+  transition: all var(--transition-fast);
+}
+
+.wolves-role-preview-row.premium-locked-role:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+#pretend-progress-bar {
+  transition: width 0.1s linear;
+}

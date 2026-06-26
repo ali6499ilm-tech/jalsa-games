@@ -431,6 +431,7 @@ const App = (() => {
       cardWyr: document.getElementById('card-wyr'),
       cardTod: document.getElementById('card-tod'),
       cardFiveSeconds: document.getElementById('card-five-seconds'),
+      cardWolves: document.getElementById('card-wolves'),
       
       // Gameplay container
       gameplayContainer: document.getElementById('gameplay-container')
@@ -631,6 +632,17 @@ const App = (() => {
       showScreen('screen-gameplay');
       activeGame = FiveSecondsGame;
       FiveSecondsGame.init(players, elements.gameplayContainer, exitGameplay);
+    });
+
+    elements.cardWolves.addEventListener('click', () => {
+      Sounds.playClick();
+      if (players.length < 4) {
+        showCustomAlert("تتطلب لعبة ذئاب قروية 4 لاعبين على الأقل.");
+        return;
+      }
+      showScreen('screen-gameplay');
+      activeGame = WolvesvilleGame;
+      WolvesvilleGame.init(players, elements.gameplayContainer, exitGameplay);
     });
   };
 
