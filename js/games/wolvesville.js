@@ -210,7 +210,7 @@ const WolvesvilleGame = (() => {
               let controlHtml = "";
               if (distributionMode === 'random') {
                 if (showLock) {
-                  controlHtml = `<span style="font-size: 0.8rem; color: var(--accent);">🔒 مغلق (نسخة برو)</span>`;
+                  controlHtml = `<span style="font-size: 0.85rem; color: #ffd700; font-weight: 700;">🔒 مغلق (برو)</span>`;
                 } else {
                   controlHtml = `<span class="player-mini-badge" style="background: #222; border: 1px solid #333; margin: 0; min-width: 60px; text-align: center;">${currentCount} لاعب</span>`;
                 }
@@ -218,8 +218,8 @@ const WolvesvilleGame = (() => {
                 // Manual Mode Selector Controls
                 if (showLock) {
                   controlHtml = `
-                    <div style="display: flex; align-items: center; gap: 5px; cursor: pointer;" class="premium-lock-clicker">
-                      <span style="font-size: 0.8rem; color: var(--accent);">🔒 اضغط للفتح</span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                      <span style="font-size: 0.85rem; color: #ffd700; font-weight: 700;">🔒 مغلق (برو)</span>
                     </div>
                   `;
                 } else {
@@ -234,11 +234,13 @@ const WolvesvilleGame = (() => {
               }
 
               return `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.03);">
+                <div class="${showLock ? 'wolves-role-row-locked' : ''}" 
+                  style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px dashed rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease; cursor: ${showLock ? 'pointer' : 'default'};"
+                  ${showLock ? `data-role-lock="${role}"` : ''}>
                   <div style="display: flex; flex-direction: column;">
-                    <strong style="color: #fff;">${getRoleArabicName(role)}</strong>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); max-width: 220px; margin-top: 2px; line-height: 1.3;">
-                      ${isPremiumRole && !isPro ? 'دور إضافي ممتع ومتقدم مقفول حالياً.' : getRoleGoal(role).split('.')[0]}
+                    <strong style="color: ${showLock ? '#ccc' : '#fff'};">${getRoleArabicName(role)}</strong>
+                    <span style="font-size: 0.75rem; color: ${showLock ? '#777' : 'var(--text-muted)'}; max-width: 220px; margin-top: 2px; line-height: 1.3;">
+                      ${isPremiumRole && !isPro ? `دور ممتع ومتقدم (${role === 'fool' ? 'الأحمق يسعى لشنقه للفوز بمفرده' : 'القاتل المتسلسل يقضي على الجميع'}). اضغط للفتح 💎` : getRoleGoal(role).split('.')[0]}
                     </span>
                   </div>
                   <div>
@@ -309,7 +311,7 @@ const WolvesvilleGame = (() => {
         });
       }
 
-      containerEl.querySelectorAll('.premium-lock-clicker').forEach(el => {
+      containerEl.querySelectorAll('[data-role-lock]').forEach(el => {
         el.addEventListener('click', () => {
           window.showProUpgradeModal(() => {
             setupGame();

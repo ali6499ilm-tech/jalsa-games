@@ -1633,15 +1633,19 @@ p {
   color: #ffffff !important;
 }
 
-.wolves-role-preview-row.premium-locked-role {
-  opacity: 0.6;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
-  transition: all var(--transition-fast);
+.wolves-role-row-locked {
+  background: rgba(255, 215, 0, 0.01) !important;
+  border: 1px solid transparent !important;
 }
 
-.wolves-role-preview-row.premium-locked-role:hover {
-  opacity: 1;
-  color: var(--accent);
+.wolves-role-row-locked:hover {
+  background: rgba(255, 215, 0, 0.04) !important;
+  border-color: rgba(255, 215, 0, 0.2) !important;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.05) !important;
+}
+
+.wolves-role-row-locked:hover strong {
+  color: #ffd700 !important;
 }
 
 #pretend-progress-bar {
