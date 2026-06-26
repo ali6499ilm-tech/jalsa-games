@@ -163,6 +163,11 @@ const Billing = (() => {
   };
 })();
 
+// Check if user is Pro
+window.isProUser = () => {
+  return Billing.isProUser();
+};
+
 // Check if a category is premium and locked
 window.isCategoryLocked = (gameId, catName) => {
   if (Billing.isProUser()) return false;
