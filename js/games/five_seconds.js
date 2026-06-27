@@ -4,10 +4,11 @@ const FiveSecondsGame = (() => {
   let playerScores = {}; // playerId -> score
   let challenges = [];
   let currentChallengeIndex = 0;
+  let playMode = 'default'; // 'default' or 'custom'
   
   let currentPlayerIndex = 0;
   let roundNum = 1;
-  const maxRounds = 2; // each player gets 2 turns
+  let maxRounds = 2; // each player gets 2 turns
   let timeLeft = 5;
   let timerInterval = null;
   let containerEl = null;
@@ -18,6 +19,9 @@ const FiveSecondsGame = (() => {
     containerEl = container;
     onExitCallback = onExit;
 
+    const settings = window.GameSettings.get('five_seconds');
+    maxRounds = settings.rounds;
+
     // Reset scores
     playerScores = {};
     playersList.forEach(p => {
@@ -27,14 +31,154 @@ const FiveSecondsGame = (() => {
     currentPlayerIndex = 0;
     roundNum = 1;
     currentChallengeIndex = 0;
+    playMode = 'default';
 
-    prepareChallenges();
-    renderTurnIntro();
+    renderLobbyScreen();
+  };
+
+  const renderLobbyScreen = () => {
+    containerEl.innerHTML = `
+      <div class="game-card animate-fade-in text-center">
+        <div class="game-header">
+          <span class="game-badge">تحدي الـ 5 ثواني ⏱️</span>
+          <h2>إعداد اللعبة ⚙️</h2>
+        </div>
+
+        <div class="bomb-intro-box">
+          <span class="bomb-large-emoji">⏱️</span>
+          <p class="intro-text">تحدي السرعة والإثارة! هل يمكنك تسمية 3 أشياء في فئة محددة خلال 5 ثوانٍ فقط؟</p>
+        </div>
+
+        <div class="category-selection-box" style="margin-bottom: 20px;">
+          <h4>اختر الأسئلة:</h4>
+          <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+            <button class="btn btn-outline mode-btn ${playMode === 'default' ? 'active' : ''}" id="btn-5s-mode-default" style="flex: 1; padding: 15px 10px;">
+              <span style="font-size: 1.5rem; display: block; margin-bottom: 5px;">🌍</span>
+              <span>أسئلة عامة</span>
+            </button>
+            <button class="btn btn-outline mode-btn ${playMode === 'custom' ? 'active' : ''}" id="btn-5s-mode-custom" style="flex: 1; padding: 15px 10px;">
+              <span style="font-size: 1.5rem; display: block; margin-bottom: 5px;">📝</span>
+              <span>كلمات مخصصة</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Box -->
+        ${(() => {
+          const settings = window.GameSettings ? window.GameSettings.get('five_seconds') : { time: 5, rounds: 2 };
+          return `
+            <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+              <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعدادات اللعبة:</h4>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.9rem; color: #fff;">وقت الإجابة:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-5s-time-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-5s-time" style="font-weight: 700; min-width: 25px; text-align: center;">${settings.time}ث</span>
+                  <button class="btn btn-outline" id="btn-5s-time-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">عدد الجولات:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-5s-rounds-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-5s-rounds" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.rounds}</span>
+                  <button class="btn btn-outline" id="btn-5s-rounds-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
+
+        <div class="game-controls">
+          <button class="btn btn-primary btn-large" id="btn-5s-start-lobby" style="width: 100%;">
+            <span>ابدأ اللعب ➡️</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const btnDefault = document.getElementById('btn-5s-mode-default');
+    const btnCustom = document.getElementById('btn-5s-mode-custom');
+
+    btnDefault.addEventListener('click', () => {
+      Sounds.playClick();
+      playMode = 'default';
+      btnDefault.classList.add('active');
+      btnCustom.classList.remove('active');
+    });
+
+    btnCustom.addEventListener('click', () => {
+      Sounds.playClick();
+      if (CustomCreator.getCustomWords().length === 0) {
+        showCustomAlert("لم تقم بإضافة كلمات مخصصة بعد! يمكنك إضافتها من شاشة 'كروتي الخاصة'.");
+        return;
+      }
+      playMode = 'custom';
+      btnCustom.classList.add('active');
+      btnDefault.classList.remove('active');
+    });
+
+    document.getElementById('btn-5s-start-lobby').addEventListener('click', () => {
+      Sounds.playClick();
+      prepareChallenges();
+      renderTurnIntro();
+    });
+
+    // Five Seconds Settings Adjustments
+    document.getElementById('btn-5s-time-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('five_seconds');
+      if (s.time > 3) {
+        s.time--;
+        window.GameSettings.set('five_seconds', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-5s-time-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('five_seconds');
+      if (s.time < 15) {
+        s.time++;
+        window.GameSettings.set('five_seconds', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-5s-rounds-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('five_seconds');
+      if (s.rounds > 1) {
+        s.rounds--;
+        window.GameSettings.set('five_seconds', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-5s-rounds-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('five_seconds');
+      if (s.rounds < 5) {
+        s.rounds++;
+        window.GameSettings.set('five_seconds', s);
+        renderLobbyScreen();
+      }
+    });
   };
 
   const prepareChallenges = () => {
-    const allChallenges = WordBank.five_seconds || [];
-    const unplayed = WordHistoryManager.getUnplayedItems('five_seconds', 'default', allChallenges);
+    let allChallenges = [];
+    if (playMode === 'custom') {
+      allChallenges = CustomCreator.getCustomWords().map(w => `أذكر 3 أشياء حول: ${w}`);
+    } else {
+      allChallenges = WordBank.five_seconds || [];
+    }
+
+    if (allChallenges.length === 0) {
+      allChallenges = WordBank.five_seconds || [];
+    }
+
+    const unplayed = WordHistoryManager.getUnplayedItems('five_seconds', playMode, allChallenges);
     challenges = [...unplayed].sort(() => Math.random() - 0.5);
   };
 
@@ -81,7 +225,8 @@ const FiveSecondsGame = (() => {
     WordHistoryManager.markAsPlayed('five_seconds', 'default', challengeText);
     currentChallengeIndex++;
     
-    timeLeft = 5;
+    const settings = window.GameSettings.get('five_seconds');
+    timeLeft = settings.time;
 
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center" style="min-height: 480px; display: flex; flex-direction: column;">
@@ -106,7 +251,7 @@ const FiveSecondsGame = (() => {
           <div class="timer-5s-container" style="width: 100%; height: 24px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; overflow: hidden; margin-bottom: 10px; position: relative;">
             <div id="bar-5s" style="height: 100%; width: 100%; background: linear-gradient(90deg, #ff3366, #ff5e62); transition: width 0.1s linear; border-radius: 50px;"></div>
           </div>
-          <div id="timer-5s-label" style="font-size: 2rem; font-weight: 900; color: #fff;">5.0</div>
+          <div id="timer-5s-label" style="font-size: 2rem; font-weight: 900; color: #fff;">${timeLeft.toFixed(1)}</div>
         </div>
 
         <div class="charades-actions-buttons" id="actions-5s" style="margin-top: 30px; display: none;">
@@ -140,7 +285,9 @@ const FiveSecondsGame = (() => {
     const bar = document.getElementById('bar-5s');
     const label = document.getElementById('timer-5s-label');
     
-    let milliseconds = 5000;
+    const settings = window.GameSettings.get('five_seconds');
+    const maxMs = settings.time * 1000;
+    let milliseconds = maxMs;
     const interval = 100; // 100ms interval for smooth progress
 
     Sounds.playTick(1.0);
@@ -150,11 +297,11 @@ const FiveSecondsGame = (() => {
       const secondsLeft = (milliseconds / 1000).toFixed(1);
       
       if (label) label.textContent = secondsLeft;
-      if (bar) bar.style.width = `${(milliseconds / 5000) * 100}%`;
+      if (bar) bar.style.width = `${(milliseconds / maxMs) * 100}%`;
 
       // Play ticking sounds faster as time runs out
       if (milliseconds % 1000 === 0 && milliseconds > 0) {
-        const pitchFactor = 1.0 + (5000 - milliseconds) / 5000; // pitch goes up
+        const pitchFactor = 1.0 + (maxMs - milliseconds) / maxMs; // pitch goes up
         Sounds.playTick(pitchFactor);
       }
 
@@ -187,6 +334,9 @@ const FiveSecondsGame = (() => {
     if (isSuccess) {
       Sounds.playSuccess();
       playerScores[activePlayer.id] += 10;
+      if (window.addGlobalPoints) {
+        window.addGlobalPoints(activePlayer.id, 10);
+      }
     } else {
       Sounds.playFail();
     }
@@ -272,6 +422,10 @@ const FiveSecondsGame = (() => {
   const restart = () => {
     cleanup();
     playersList = [...playersList].sort(() => Math.random() - 0.5);
+    
+    const settings = window.GameSettings.get('five_seconds');
+    maxRounds = settings.rounds;
+
     playerScores = {};
     playersList.forEach(p => {
       playerScores[p.id] = 0;

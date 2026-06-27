@@ -316,6 +316,160 @@ const WordHistoryManager = (() => {
   };
 })();
 
+// Global Session Scoreboard Manager
+window.addGlobalPoints = (playerId, points) => {
+  let scores = {};
+  try {
+    scores = JSON.parse(localStorage.getItem('jalsa_global_scores') || '{}');
+  } catch (e) {
+    scores = {};
+  }
+  const currentScore = scores[playerId] || 0;
+  scores[playerId] = currentScore + points;
+  localStorage.setItem('jalsa_global_scores', JSON.stringify(scores));
+};
+
+window.showGlobalScoreboardModal = () => {
+  const existing = document.querySelector('.scoreboard-modal-overlay');
+  if (existing) existing.remove();
+
+  let scores = {};
+  try {
+    scores = JSON.parse(localStorage.getItem('jalsa_global_scores') || '{}');
+  } catch (e) {
+    scores = {};
+  }
+
+  let currentPlayers = [];
+  try {
+    currentPlayers = JSON.parse(localStorage.getItem('jalsa_players') || '[]');
+  } catch (e) {
+    currentPlayers = [];
+  }
+
+  if (currentPlayers.length === 0) {
+    window.showCustomAlert("يرجى إضافة لاعبين أولاً لمشاهدة لوحة النقاط!");
+    return;
+  }
+
+  const playerScoresList = currentPlayers.map(p => {
+    return {
+      id: p.id,
+      name: p.name,
+      emoji: p.emoji,
+      color: p.color,
+      score: scores[p.id] || 0
+    };
+  }).sort((a, b) => b.score - a.score);
+
+  const modal = document.createElement('div');
+  modal.className = 'scoreboard-modal-overlay animate-fade-in';
+  
+  let rowsHtml = playerScoresList.map((p, idx) => {
+    const medal = idx === 0 ? '👑' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
+    return `
+      <div class="scoreboard-modal-row" style="border-right: 4px solid ${p.color};">
+        <div class="scoreboard-modal-player">
+          <span class="scoreboard-modal-rank">${medal || `#${idx + 1}`}</span>
+          <div class="scoreboard-modal-avatar" style="background: ${p.color}22; color: ${p.color};">
+            <span>${p.emoji}</span>
+          </div>
+          <span class="scoreboard-modal-name">${p.name}</span>
+        </div>
+        <span class="scoreboard-modal-score">${p.score} نقطة</span>
+      </div>
+    `;
+  }).join('');
+
+  modal.innerHTML = `
+    <div class="scoreboard-modal-card animate-zoom-in">
+      <button class="scoreboard-modal-close-btn" id="scoreboard-modal-close">❌</button>
+      <div class="scoreboard-modal-header">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 5px;">🏆</span>
+        <h3>نقاط السهرة العامة</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">مجموع النقاط المتراكمة لجميع اللاعبين في كافة الألعاب</p>
+      </div>
+      
+      <div class="scoreboard-modal-list">
+        ${rowsHtml}
+      </div>
+      
+      <div class="scoreboard-modal-actions">
+        <button class="btn btn-outline" id="btn-reset-scoreboard" style="flex: 1; border-color: var(--danger); color: var(--danger); font-size: 0.9rem;">
+          تصفير النقاط 🔄
+        </button>
+        <button class="btn btn-primary" id="btn-close-scoreboard-foot" style="flex: 1; font-size: 0.9rem;">
+          حسناً 👍
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const closeModal = () => {
+    if (typeof Sounds !== 'undefined' && typeof Sounds.playClick === 'function') {
+      Sounds.playClick();
+    }
+    modal.remove();
+  };
+
+  document.getElementById('scoreboard-modal-close').addEventListener('click', closeModal);
+  document.getElementById('btn-close-scoreboard-foot').addEventListener('click', closeModal);
+
+  document.getElementById('btn-reset-scoreboard').addEventListener('click', () => {
+    if (typeof Sounds !== 'undefined' && typeof Sounds.playClick === 'function') {
+      Sounds.playClick();
+    }
+    
+    App.showCustomConfirm("هل أنت متأكد من تصفير جميع نقاط السهرة؟ لا يمكن التراجع عن هذا الإجراء.", () => {
+      localStorage.setItem('jalsa_global_scores', '{}');
+      if (typeof Sounds !== 'undefined' && typeof Sounds.playSuccess === 'function') {
+        Sounds.playSuccess();
+      }
+      modal.remove();
+      window.showCustomAlert("تم تصفير جميع نقاط السهرة بنجاح! 🔄");
+    });
+  });
+};
+
+// Game Settings Manager
+const GameSettings = (() => {
+  const DEFAULTS = {
+    undercover: { spies: 1, undercovers: 1 },
+    bomb: { minTime: 20, maxTime: 40 },
+    charades: { time: 60, rounds: 3 },
+    taboo: { time: 60, rounds: 3 },
+    five_seconds: { time: 5, rounds: 2 },
+    would_you_rather: { rounds: 2 },
+    truth_or_dare: { rounds: 2 },
+    wolvesville: { discussionTime: 45 }
+  };
+
+  const get = (gameId) => {
+    const saved = localStorage.getItem(`jalsa_settings_${gameId}`);
+    if (saved) {
+      try {
+        return { ...DEFAULTS[gameId], ...JSON.parse(saved) };
+      } catch (e) {
+        return DEFAULTS[gameId];
+      }
+    }
+    return DEFAULTS[gameId];
+  };
+
+  const set = (gameId, settings) => {
+    localStorage.setItem(`jalsa_settings_${gameId}`, JSON.stringify(settings));
+  };
+
+  return {
+    get,
+    set,
+    DEFAULTS
+  };
+})();
+window.GameSettings = GameSettings;
+
 const App = (() => {
   // 1. App State
   let players = [];
@@ -401,7 +555,8 @@ const App = (() => {
         home: document.getElementById('screen-home'),
         players: document.getElementById('screen-players'),
         games: document.getElementById('screen-games'),
-        gameplay: document.getElementById('screen-gameplay')
+        gameplay: document.getElementById('screen-gameplay'),
+        customCreator: document.getElementById('screen-custom-creator')
       },
       btnStart: document.getElementById('btn-start-app'),
       btnGoToGames: document.getElementById('btn-go-games'),
@@ -410,6 +565,10 @@ const App = (() => {
       
       btnHomeBuyPro: document.getElementById('btn-home-buy-pro'),
       btnGamesBuyPro: document.getElementById('btn-games-buy-pro'),
+
+      btnHomeCustomCreator: document.getElementById('btn-home-custom-creator'),
+      btnGamesCustomCreator: document.getElementById('btn-custom-creator-games'),
+      btnShowGlobalScoreboard: document.getElementById('btn-show-global-scoreboard'),
       
       // Top Navigation during gameplay
       btnGameplayExit: document.getElementById('btn-gameplay-exit'),
@@ -529,6 +688,29 @@ const App = (() => {
       showScreen('screen-players');
     });
 
+    if (elements.btnHomeCustomCreator) {
+      elements.btnHomeCustomCreator.addEventListener('click', () => {
+        Sounds.playClick();
+        showScreen('screen-custom-creator');
+        CustomCreator.init();
+      });
+    }
+
+    if (elements.btnGamesCustomCreator) {
+      elements.btnGamesCustomCreator.addEventListener('click', () => {
+        Sounds.playClick();
+        showScreen('screen-custom-creator');
+        CustomCreator.init();
+      });
+    }
+
+    if (elements.btnShowGlobalScoreboard) {
+      elements.btnShowGlobalScoreboard.addEventListener('click', () => {
+        Sounds.playClick();
+        window.showGlobalScoreboardModal();
+      });
+    }
+
     // Top Navigation during gameplay
     elements.btnGameplayExit.addEventListener('click', () => {
       showCustomConfirm("هل تريد إنهاء اللعب والعودة لقائمة اختيار الألعاب؟ سيتم إلغاء الجولة الحالية.", () => {
@@ -637,7 +819,7 @@ const App = (() => {
     elements.cardWolves.addEventListener('click', () => {
       Sounds.playClick();
       if (players.length < 4) {
-        showCustomAlert("تتطلب لعبة ذئاب قروية 4 لاعبين على الأقل.");
+        showCustomAlert("تتطلب لعبة الذئاب والقرويون 4 لاعبين على الأقل.");
         return;
       }
       showScreen('screen-gameplay');
@@ -907,7 +1089,8 @@ const App = (() => {
   return {
     init,
     showScreen,
-    exitGameplay
+    exitGameplay,
+    showCustomConfirm
   };
 })();
 

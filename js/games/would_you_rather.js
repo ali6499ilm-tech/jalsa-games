@@ -5,9 +5,10 @@ const WouldYouRatherGame = (() => {
   let currentQuestionIndex = 0;
   let currentPlayerIndex = 0;
   let roundNum = 1;
-  const maxRounds = 2; // each player gets 2 prompts
+  let maxRounds = 2; // each player gets 2 prompts
   let containerEl = null;
   let onExitCallback = null;
+  let playMode = 'default'; // 'default' or 'custom'
   
   let selectedOption = null; // 'a' or 'b'
   let simulatedPercentageA = 50;
@@ -18,18 +19,133 @@ const WouldYouRatherGame = (() => {
     containerEl = container;
     onExitCallback = onExit;
 
+    const settings = window.GameSettings.get('would_you_rather');
+    maxRounds = settings.rounds;
+
     currentQuestionIndex = 0;
     currentPlayerIndex = 0;
     roundNum = 1;
     selectedOption = null;
+    playMode = 'default';
 
-    prepareQuestions();
-    renderTurnIntro();
+    renderLobbyScreen();
+  };
+
+  const renderLobbyScreen = () => {
+    containerEl.innerHTML = `
+      <div class="game-card animate-fade-in text-center">
+        <div class="game-header">
+          <span class="game-badge">لو خيروك؟ 🤔</span>
+          <h2>إعداد اللعبة ⚙️</h2>
+        </div>
+
+        <div class="bomb-intro-box">
+          <span class="bomb-large-emoji">🤔</span>
+          <p class="intro-text">سيعرض لك التطبيق خيارات صعبة ومحيرة لتختار منها وتناقش أصدقاءك!</p>
+        </div>
+
+        <div class="category-selection-box" style="margin-bottom: 20px;">
+          <h4>اختر الأسئلة:</h4>
+          <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+            <button class="btn btn-outline mode-btn ${playMode === 'default' ? 'active' : ''}" id="btn-wyr-mode-default" style="flex: 1; padding: 15px 10px;">
+              <span style="font-size: 1.5rem; display: block; margin-bottom: 5px;">🌍</span>
+              <span>أسئلة عامة</span>
+            </button>
+            <button class="btn btn-outline mode-btn ${playMode === 'custom' ? 'active' : ''}" id="btn-wyr-mode-custom" style="flex: 1; padding: 15px 10px;">
+              <span style="font-size: 1.5rem; display: block; margin-bottom: 5px;">📝</span>
+              <span>أسئلة مخصصة</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Box -->
+        ${(() => {
+          const settings = window.GameSettings ? window.GameSettings.get('would_you_rather') : { rounds: 2 };
+          return `
+            <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+              <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعدادات اللعبة:</h4>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">عدد الجولات لكل لاعب:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-wyr-rounds-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-wyr-rounds" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.rounds}</span>
+                  <button class="btn btn-outline" id="btn-wyr-rounds-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
+
+        <div class="game-controls">
+          <button class="btn btn-primary btn-large" id="btn-wyr-start-lobby" style="width: 100%;">
+            <span>ابدأ اللعب ➡️</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const btnDefault = document.getElementById('btn-wyr-mode-default');
+    const btnCustom = document.getElementById('btn-wyr-mode-custom');
+
+    btnDefault.addEventListener('click', () => {
+      Sounds.playClick();
+      playMode = 'default';
+      btnDefault.classList.add('active');
+      btnCustom.classList.remove('active');
+    });
+
+    btnCustom.addEventListener('click', () => {
+      Sounds.playClick();
+      if (CustomCreator.getWyrQuestions().length === 0) {
+        showCustomAlert("لم تقم بإضافة أسئلة مخصصة بعد! يمكنك إضافتها من شاشة 'كروتي الخاصة'.");
+        return;
+      }
+      playMode = 'custom';
+      btnCustom.classList.add('active');
+      btnDefault.classList.remove('active');
+    });
+
+    document.getElementById('btn-wyr-start-lobby').addEventListener('click', () => {
+      Sounds.playClick();
+      prepareQuestions();
+      renderTurnIntro();
+    });
+
+    // WYR settings adjustments
+    document.getElementById('btn-wyr-rounds-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('would_you_rather');
+      if (s.rounds > 1) {
+        s.rounds--;
+        window.GameSettings.set('would_you_rather', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-wyr-rounds-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('would_you_rather');
+      if (s.rounds < 5) {
+        s.rounds++;
+        window.GameSettings.set('would_you_rather', s);
+        renderLobbyScreen();
+      }
+    });
   };
 
   const prepareQuestions = () => {
-    const allQuestions = WordBank.would_you_rather || [];
-    const unplayed = WordHistoryManager.getUnplayedItems('would_you_rather', 'default', allQuestions);
+    let allQuestions = [];
+    if (playMode === 'custom') {
+      allQuestions = CustomCreator.getWyrQuestions();
+    } else {
+      allQuestions = WordBank.would_you_rather || [];
+    }
+
+    if (allQuestions.length === 0) {
+      allQuestions = WordBank.would_you_rather || [];
+    }
+
+    const unplayed = WordHistoryManager.getUnplayedItems('would_you_rather', playMode, allQuestions);
     questionsList = [...unplayed].sort(() => Math.random() - 0.5);
   };
 
@@ -219,6 +335,10 @@ const WouldYouRatherGame = (() => {
 
   const restart = () => {
     playersList = [...playersList].sort(() => Math.random() - 0.5);
+    
+    const settings = window.GameSettings.get('would_you_rather');
+    maxRounds = settings.rounds;
+
     currentQuestionIndex = 0;
     currentPlayerIndex = 0;
     roundNum = 1;

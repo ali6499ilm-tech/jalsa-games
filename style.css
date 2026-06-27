@@ -1615,7 +1615,7 @@ p {
   }
 }
 
-/* Wolvesville (ذئاب قروية) Dark Style Rules */
+/* Wolvesville (الذئاب والقرويون) Dark Style Rules */
 .wolves-night-view {
   background: #000000 !important;
   color: #e0e0e0 !important;
@@ -1650,4 +1650,167 @@ p {
 
 #pretend-progress-bar {
   transition: width 0.1s linear;
+}
+
+/* Custom Content Creator & Global Scoreboard Styles */
+.btn-tab {
+  background: none;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  transition: all 0.25s ease;
+}
+.btn-tab:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+}
+.btn-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(155, 81, 224, 0.3);
+}
+
+.added-item-row {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+.added-item-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.added-item-row span {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: right;
+}
+.btn-delete-item {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px;
+  transition: transform 0.2s ease;
+}
+.btn-delete-item:hover {
+  transform: scale(1.2);
+}
+
+/* Global Scoreboard Modal */
+.scoreboard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 10, 29, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.scoreboard-modal-card {
+  background: linear-gradient(135deg, #161233 0%, #0d0a1d 100%);
+  border: 2px solid rgba(0, 242, 254, 0.2);
+  box-shadow: 0 0 30px rgba(0, 242, 254, 0.15);
+  border-radius: 28px;
+  width: 100%;
+  max-width: 420px;
+  padding: 30px 25px;
+  position: relative;
+  text-align: center;
+}
+.scoreboard-modal-header {
+  margin-bottom: 20px;
+}
+.scoreboard-modal-header h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 5px;
+}
+.scoreboard-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 25px;
+  padding: 5px;
+}
+.scoreboard-modal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
+}
+.scoreboard-modal-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.scoreboard-modal-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.scoreboard-modal-rank {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 20px;
+}
+.scoreboard-modal-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.scoreboard-modal-name {
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.95rem;
+}
+.scoreboard-modal-score {
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+.scoreboard-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+.scoreboard-modal-close-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(255,255,255,0.05);
+  border: none;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+.scoreboard-modal-close-btn:hover {
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.1);
 }

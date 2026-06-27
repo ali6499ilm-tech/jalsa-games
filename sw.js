@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalsa-cache-v8';
+const CACHE_NAME = 'jalsa-cache-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -7,8 +7,11 @@ const ASSETS = [
   './icon.png',
   './icon-192.png',
   './icon-512.png',
+  './screenshot-mobile.png',
+  './screenshot-desktop.png',
   './js/sounds.js',
   './js/words.js',
+  './js/custom_creator.js',
   './js/games/undercover.js',
   './js/games/bomb.js',
   './js/games/charades.js',

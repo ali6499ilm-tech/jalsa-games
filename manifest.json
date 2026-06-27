@@ -2,7 +2,8 @@
   "name": "جلسة حماس - ألعاب جماعية",
   "short_name": "جلسة حماس",
   "description": "ألعاب جماعية حماسية من هاتف واحد لتسلية جمعتكم وسهراتكم العائلية ومع الأصدقاء!",
-  "start_url": "index.html",
+  "id": "/jalsa-games",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#07050f",
   "theme_color": "#0d0a1d",
@@ -11,12 +12,42 @@
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot-mobile.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "واجهة اللعب الممتعة والحماسية على الهاتف"
+    },
+    {
+      "src": "screenshot-desktop.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "قائمة الألعاب الجماعية المتنوعة والمميزة"
     }
   ]
 }

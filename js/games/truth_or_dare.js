@@ -6,10 +6,11 @@ const TruthOrDareGame = (() => {
   let dareChallenges = [];
   let currentTruthIndex = 0;
   let currentDareIndex = 0;
+  let playMode = 'default'; // 'default' or 'custom'
   
   let currentPlayerIndex = 0;
   let roundNum = 1;
-  const maxRounds = 2; // each player gets 2 turns
+  let maxRounds = 2; // each player gets 2 turns
   let containerEl = null;
   let onExitCallback = null;
 
@@ -17,6 +18,9 @@ const TruthOrDareGame = (() => {
     playersList = [...players].sort(() => Math.random() - 0.5); // shuffle order
     containerEl = container;
     onExitCallback = onExit;
+
+    const settings = window.GameSettings.get('truth_or_dare');
+    maxRounds = settings.rounds;
 
     // Reset scores
     playerScores = {};
@@ -28,14 +32,129 @@ const TruthOrDareGame = (() => {
     roundNum = 1;
     currentTruthIndex = 0;
     currentDareIndex = 0;
+    playMode = 'default';
 
-    preparePrompts();
-    renderTurnIntro();
+    renderLobbyScreen();
+  };
+
+  const renderLobbyScreen = () => {
+    containerEl.innerHTML = `
+      <div class="game-card animate-fade-in text-center">
+        <div class="game-header">
+          <span class="game-badge">صراحة أو تحدي 🍾</span>
+          <h2>إعداد اللعبة ⚙️</h2>
+        </div>
+
+        <div class="bomb-intro-box">
+          <span class="bomb-large-emoji">🍾</span>
+          <p class="intro-text">اختر الصراحة لتكشف أسرارك أو التحدي لتنفيذ مهام مجنونة ومضحكة أمام أصدقائك!</p>
+        </div>
+
+        <div class="category-selection-box" style="margin-bottom: 20px;">
+          <h4>اختر الأسئلة:</h4>
+          <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+            <button class="btn btn-outline mode-btn ${playMode === 'default' ? 'active' : ''}" id="btn-tod-mode-default" style="flex: 1; padding: 15px 10px;">
+              <span style="font-size: 1.5rem; display: block; margin-bottom: 5px;">🌍</span>
+              <span>أسئلة عامة</span>
+            </button>
+            <button class="btn btn-outline mode-btn ${playMode === 'custom' ? 'active' : ''}" id="btn-tod-mode-custom" style="flex: 1; padding: 15px 10px;">
+              <span style="font-size: 1.5rem; display: block; margin-bottom: 5px;">📝</span>
+              <span>أسئلة مخصصة</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Box -->
+        ${(() => {
+          const settings = window.GameSettings ? window.GameSettings.get('truth_or_dare') : { rounds: 2 };
+          return `
+            <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+              <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعدادات اللعبة:</h4>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">عدد الجولات لكل لاعب:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-tod-rounds-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-tod-rounds" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.rounds}</span>
+                  <button class="btn btn-outline" id="btn-tod-rounds-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
+
+        <div class="game-controls">
+          <button class="btn btn-primary btn-large" id="btn-tod-start-lobby" style="width: 100%;">
+            <span>ابدأ اللعب ➡️</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const btnDefault = document.getElementById('btn-tod-mode-default');
+    const btnCustom = document.getElementById('btn-tod-mode-custom');
+
+    btnDefault.addEventListener('click', () => {
+      Sounds.playClick();
+      playMode = 'default';
+      btnDefault.classList.add('active');
+      btnCustom.classList.remove('active');
+    });
+
+    btnCustom.addEventListener('click', () => {
+      Sounds.playClick();
+      if (CustomCreator.getTodCards().length === 0) {
+        showCustomAlert("لم تقم بإضافة كروت مخصصة بعد! يمكنك إضافتها من شاشة 'كروتي الخاصة'.");
+        return;
+      }
+      playMode = 'custom';
+      btnCustom.classList.add('active');
+      btnDefault.classList.remove('active');
+    });
+
+    document.getElementById('btn-tod-start-lobby').addEventListener('click', () => {
+      Sounds.playClick();
+      preparePrompts();
+      renderTurnIntro();
+    });
+
+    // TOD settings adjustments
+    document.getElementById('btn-tod-rounds-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('truth_or_dare');
+      if (s.rounds > 1) {
+        s.rounds--;
+        window.GameSettings.set('truth_or_dare', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-tod-rounds-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('truth_or_dare');
+      if (s.rounds < 5) {
+        s.rounds++;
+        window.GameSettings.set('truth_or_dare', s);
+        renderLobbyScreen();
+      }
+    });
   };
 
   const preparePrompts = () => {
-    const allTruths = WordBank.truth_or_dare.truth || [];
-    const allDares = WordBank.truth_or_dare.dare || [];
+    let allTruths = [];
+    let allDares = [];
+
+    if (playMode === 'custom') {
+      const customCards = CustomCreator.getTodCards();
+      allTruths = customCards.filter(c => c.type === 'truth').map(c => c.text);
+      allDares = customCards.filter(c => c.type === 'dare').map(c => c.text);
+    } else {
+      allTruths = WordBank.truth_or_dare.truth || [];
+      allDares = WordBank.truth_or_dare.dare || [];
+    }
+
+    if (allTruths.length === 0) allTruths = WordBank.truth_or_dare.truth || [];
+    if (allDares.length === 0) allDares = WordBank.truth_or_dare.dare || [];
+
     const unplayedTruths = WordHistoryManager.getUnplayedItems('truth_or_dare', 'truth', allTruths);
     const unplayedDares = WordHistoryManager.getUnplayedItems('truth_or_dare', 'dare', allDares);
 
@@ -186,6 +305,9 @@ const TruthOrDareGame = (() => {
     if (isSuccess) {
       Sounds.playSuccess();
       playerScores[activePlayer.id] += 10;
+      if (window.addGlobalPoints) {
+        window.addGlobalPoints(activePlayer.id, 10);
+      }
     } else {
       Sounds.playFail();
     }
@@ -270,6 +392,10 @@ const TruthOrDareGame = (() => {
 
   const restart = () => {
     playersList = [...playersList].sort(() => Math.random() - 0.5);
+    
+    const settings = window.GameSettings.get('truth_or_dare');
+    maxRounds = settings.rounds;
+
     playerScores = {};
     playersList.forEach(p => {
       playerScores[p.id] = 0;

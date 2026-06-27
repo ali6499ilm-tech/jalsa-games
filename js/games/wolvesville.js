@@ -1,4 +1,4 @@
-// Jalsa - Wolvesville (ذئاب قروية) Game Logic
+// Jalsa - Wolvesville (الذئاب والقرويون) Game Logic
 const WolvesvilleGame = (() => {
   let playersList = [];
   let gamePlayers = []; // { id, name, emoji, color, role, active: true }
@@ -16,11 +16,24 @@ const WolvesvilleGame = (() => {
     werewolf: 0,
     seer: 0,
     doctor: 0,
+    mayor: 0,
+    gunner: 0,
+    medium: 0,
+    junior_werewolf: 0,
+    wolf_seer: 0,
     fool: 0,
-    serial_killer: 0
+    serial_killer: 0,
+    cupid: 0,
+    arsonist: 0
   };
 
-  // Night choices
+  // Night choices & State
+  let nightNumber = 1;
+  let lovers = []; // array of 2 player objects
+  let dousedPlayerIds = []; // player IDs doused by Arsonist
+  let arsonistIgnite = false; // whether Arsonist chose to ignite
+  let gunnerBullets = {}; // player.id -> bullets (1 or 0)
+  
   let werewolfTarget = null;
   let killerTarget = null;
   let doctorTarget = null;
@@ -48,6 +61,11 @@ const WolvesvilleGame = (() => {
     nightPlayerIndex = 0;
     activeNightPlayers = [];
     distributionMode = 'random';
+    nightNumber = 1;
+    lovers = [];
+    dousedPlayerIds = [];
+    arsonistIgnite = false;
+    gunnerBullets = {};
     
     initManualRoleCounts();
     resetNightChoices();
@@ -59,6 +77,7 @@ const WolvesvilleGame = (() => {
     killerTarget = null;
     doctorTarget = null;
     seerTarget = null;
+    arsonistIgnite = false;
   };
 
   const getRandomRolesForCount = (count, isPro) => {
@@ -69,11 +88,21 @@ const WolvesvilleGame = (() => {
       } else if (count === 5) {
         roles = ['werewolf', 'seer', 'doctor', 'fool', 'villager'];
       } else if (count === 6) {
-        roles = ['werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
+        roles = ['werewolf', 'seer', 'doctor', 'serial_killer', 'mayor', 'villager'];
       } else if (count === 7) {
-        roles = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer', 'villager'];
+        roles = ['werewolf', 'seer', 'doctor', 'serial_killer', 'cupid', 'mayor', 'villager'];
+      } else if (count === 8) {
+        roles = ['werewolf', 'wolf_seer', 'seer', 'doctor', 'serial_killer', 'cupid', 'mayor', 'villager'];
+      } else if (count === 9) {
+        roles = ['werewolf', 'wolf_seer', 'seer', 'doctor', 'serial_killer', 'cupid', 'mayor', 'gunner', 'villager'];
+      } else if (count === 10) {
+        roles = ['werewolf', 'werewolf', 'wolf_seer', 'seer', 'doctor', 'serial_killer', 'cupid', 'mayor', 'gunner', 'villager'];
+      } else if (count === 11) {
+        roles = ['werewolf', 'werewolf', 'wolf_seer', 'seer', 'doctor', 'serial_killer', 'cupid', 'mayor', 'gunner', 'arsonist', 'villager'];
+      } else if (count === 12) {
+        roles = ['werewolf', 'werewolf', 'wolf_seer', 'seer', 'doctor', 'serial_killer', 'cupid', 'mayor', 'gunner', 'arsonist', 'medium', 'junior_werewolf'];
       } else {
-        roles = ['werewolf', 'werewolf', 'seer', 'doctor', 'fool', 'serial_killer'];
+        roles = ['werewolf', 'werewolf', 'junior_werewolf', 'wolf_seer', 'seer', 'doctor', 'mayor', 'gunner', 'medium', 'fool', 'serial_killer', 'cupid', 'arsonist'];
         while (roles.length < count) {
           roles.push('villager');
         }
@@ -95,7 +124,7 @@ const WolvesvilleGame = (() => {
         }
       }
     }
-    return roles;
+    return roles.slice(0, count);
   };
 
   const initManualRoleCounts = () => {
@@ -109,8 +138,15 @@ const WolvesvilleGame = (() => {
       werewolf: 0,
       seer: 0,
       doctor: 0,
+      mayor: 0,
+      gunner: 0,
+      medium: 0,
+      junior_werewolf: 0,
+      wolf_seer: 0,
       fool: 0,
-      serial_killer: 0
+      serial_killer: 0,
+      cupid: 0,
+      arsonist: 0
     };
     
     defaultRoles.forEach(r => {
@@ -121,11 +157,18 @@ const WolvesvilleGame = (() => {
   const getRoleArabicName = (role) => {
     const names = {
       villager: "قروي 🧑‍🌾",
-      werewolf: "ذئب مستذئب 🐺",
       seer: "عراف 🔮",
       doctor: "طبيب 👨‍⚕️",
+      werewolf: "ذئب مستذئب 🐺",
+      mayor: "الرئيس 👑",
+      gunner: "صاحب السلاح 🔫",
+      medium: "الوسيط 👻",
+      junior_werewolf: "المستذئب الصغير 🐺👶",
+      wolf_seer: "عراف الذئاب 🔮🐺",
       fool: "الأحمق 🃏",
-      serial_killer: "القاتل المتسلسل 🔪"
+      serial_killer: "القاتل المتسلسل 🔪",
+      cupid: "إله الحب 💘",
+      arsonist: "الحارق 🔥"
     };
     return names[role] || role;
   };
@@ -133,11 +176,18 @@ const WolvesvilleGame = (() => {
   const getRoleGoal = (role) => {
     const goals = {
       villager: "ابحث عن الذئاب والقاتل المتسلسل واقنع الجميع بشنقهم نهاراً لحماية قريتك. 🔵",
-      werewolf: "اتفق مع الذئاب الأخرى ليلاً واقضوا على القرويين دون أن تنكشف هويتكم. 🔴",
       seer: "استيقظ ليلاً واكشف هالات اللاعبين لمعرفة ولائهم ووجه القرويين بشكل غير مباشر. 🔵",
       doctor: "اختر لاعباً كل ليلة لحمايته من هجمات المخالب والسكاكين (يمكنك حماية نفسك). 🔵",
+      werewolf: "اتفق مع الذئاب الأخرى ليلاً واقضوا على القرويين دون أن تنكشف هويتكم. 🔴",
+      mayor: "صوتك في النهار يُحتسب بصوتين بدلاً من صوت واحد لمساعدتك في قيادة البلدة. 🔵",
+      gunner: "لديك رصاصة واحدة في اللعبة كاملة؛ يمكنك استخدامها في مرحلة النقاش لقتل لاعب أمام الجميع علناً. 🔵",
+      medium: "استيقظ ليلاً لمحادثة الموتى واختيار أحدهم ليكشف لك روحه ودوره الحقيقي. 🔵",
+      junior_werewolf: "تشارك مع الذئاب، وإذا تم شنقك نهاراً، يمكنك اختيار لاعب ليموت معك فوراً انتقاماً. 🔴",
+      wolf_seer: "استيقظ ليلاً واكشف الدور الدقيق لأي لاعب لمساعدة فريق الذئاب في اختيار ضحاياهم. 🔴",
       fool: "تظاهر بالشك والريبة! هدفك الوحيد هو جعل القرويين يشكون بك ويشنقونك نهاراً لتفوز بمفردك! 🟣",
-      serial_killer: "أنت عدو الجميع. استيقظ ليلاً واقضِ على ضحية واحدة. يجب أن تكون الناجي الوحيد لتفوز. 🟣"
+      serial_killer: "أنت عدو الجميع. استيقظ ليلاً واقضِ على ضحية واحدة. يجب أن تكون الناجي الوحيد لتفوز. 🟣",
+      cupid: "في الليلة الأولى فقط، اختر لاعبين لربطهما كعشاق. إذا مات أحدهما، يموت الآخر فوراً! 🟣",
+      arsonist: "قم بصب البنزين على اللاعبين ليلاً سراً، أو اختر إشعال النار لحرق كل من صببت عليهم البنزين معاً! 🟣"
     };
     return goals[role] || "";
   };
@@ -151,8 +201,16 @@ const WolvesvilleGame = (() => {
       roles = getRandomRolesForCount(numPlayers, isPro);
     } else {
       // Manual distribution
+      const isPro = window.isProUser();
       Object.keys(manualRoleCounts).forEach(role => {
-        for (let i = 0; i < manualRoleCounts[role]; i++) {
+        const isPremiumRole = ['mayor', 'gunner', 'medium', 'junior_werewolf', 'wolf_seer', 'fool', 'serial_killer', 'cupid', 'arsonist'].includes(role);
+        let count = manualRoleCounts[role] || 0;
+        if (isPremiumRole && !isPro) {
+          manualRoleCounts.villager = (manualRoleCounts.villager || 0) + count;
+          manualRoleCounts[role] = 0;
+          count = 0;
+        }
+        for (let i = 0; i < count; i++) {
           roles.push(role);
         }
       });
@@ -167,9 +225,17 @@ const WolvesvilleGame = (() => {
     // Assign to active players
     gamePlayers = playersList.map((p, idx) => ({
       ...p,
-      role: roles[idx],
+      role: roles[idx] || 'villager',
       active: true
     }));
+
+    // Initialize gunner bullets
+    gunnerBullets = {};
+    gamePlayers.forEach(p => {
+      if (p.role === 'gunner') {
+        gunnerBullets[p.id] = 1;
+      }
+    });
   };
 
   const renderLobbyScreen = () => {
@@ -182,13 +248,17 @@ const WolvesvilleGame = (() => {
 
     // Preview roles for random mode
     let randomRoles = getRandomRolesForCount(numPlayers, isPro);
-    let randomCounts = { villager: 0, werewolf: 0, seer: 0, doctor: 0, fool: 0, serial_killer: 0 };
+    let randomCounts = {
+      villager: 0, werewolf: 0, seer: 0, doctor: 0, mayor: 0, gunner: 0,
+      medium: 0, junior_werewolf: 0, wolf_seer: 0, fool: 0, serial_killer: 0,
+      cupid: 0, arsonist: 0
+    };
     randomRoles.forEach(r => randomCounts[r]++);
 
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
         <div class="game-header">
-          <span class="game-badge">ذئاب قروية (Wolvesville) 🐺</span>
+          <span class="game-badge">الذئاب والقرويون (Wolvesville) 🐺</span>
           <h2>إعداد القرية الغامضة</h2>
         </div>
 
@@ -203,7 +273,7 @@ const WolvesvilleGame = (() => {
           </h4>
           <div style="display: flex; flex-direction: column; gap: 10px;">
             ${Object.keys(manualRoleCounts).map(role => {
-              const isPremiumRole = role === 'fool' || role === 'serial_killer';
+              const isPremiumRole = ['mayor', 'gunner', 'medium', 'junior_werewolf', 'wolf_seer', 'fool', 'serial_killer', 'cupid', 'arsonist'].includes(role);
               const showLock = isPremiumRole && !isPro;
               const currentCount = distributionMode === 'random' ? (randomCounts[role] || 0) : manualRoleCounts[role];
 
@@ -240,7 +310,7 @@ const WolvesvilleGame = (() => {
                   <div style="display: flex; flex-direction: column;">
                     <strong style="color: ${showLock ? '#ccc' : '#fff'};">${getRoleArabicName(role)}</strong>
                     <span style="font-size: 0.75rem; color: ${showLock ? '#777' : 'var(--text-muted)'}; max-width: 220px; margin-top: 2px; line-height: 1.3;">
-                      ${isPremiumRole && !isPro ? `دور ممتع ومتقدم (${role === 'fool' ? 'الأحمق يسعى لشنقه للفوز بمفرده' : 'القاتل المتسلسل يقضي على الجميع'}). اضغط للفتح 💎` : getRoleGoal(role).split('.')[0]}
+                      ${showLock ? `دور ممتع ومتقدم (${getRoleArabicName(role)}). اضغط للفتح 💎` : getRoleGoal(role).split('.')[0]}
                     </span>
                   </div>
                   <div>
@@ -262,7 +332,7 @@ const WolvesvilleGame = (() => {
 
           ${!isPro ? `
             <div style="margin-top: 12px; background: rgba(0, 242, 254, 0.05); border: 1px dashed rgba(0, 242, 254, 0.2); padding: 10px; border-radius: 8px; font-size: 0.8rem; text-align: center; color: #00f2fe; cursor: pointer;" id="btn-unlock-pro-roles">
-              💎 الأدوار المقفلة (الأحمق والقاتل) تتطلب النسخة البرو. اضغط للفتح!
+              💎 الأدوار المقفلة تتطلب النسخة البرو. اضغط للفتح!
             </div>
           ` : ''}
         </div>
@@ -277,6 +347,24 @@ const WolvesvilleGame = (() => {
             `).join('')}
           </div>
         </div>
+
+        <!-- Timer Settings Box -->
+        ${(() => {
+          const settings = window.GameSettings ? window.GameSettings.get('wolvesville') : { discussionTime: 45 };
+          return `
+            <div class="settings-box" style="margin-top: 15px; margin-bottom: 15px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+              <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعداد مؤقت النهار:</h4>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">وقت النقاش الصباحي:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-wolves-time-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-wolves-time" style="font-weight: 700; min-width: 30px; text-align: center;">${settings.discussionTime}ث</span>
+                  <button class="btn btn-outline" id="btn-wolves-time-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
 
         <div class="game-controls">
           <button class="btn btn-primary btn-large" id="btn-start-wolves-reveal" ${distributionMode === 'manual' && !isMatching ? 'disabled' : ''}>
@@ -329,7 +417,6 @@ const WolvesvilleGame = (() => {
           const action = btn.getAttribute('data-action');
 
           if (action === 'plus') {
-            // Cap total count to not exceed player count
             if (manualTotal < numPlayers) {
               manualRoleCounts[role]++;
             } else {
@@ -350,6 +437,27 @@ const WolvesvilleGame = (() => {
       Sounds.playClick();
       assignRoles();
       startRevealPhase();
+    });
+
+    // Wolvesville Settings Adjustments
+    document.getElementById('btn-wolves-time-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('wolvesville');
+      if (s.discussionTime > 15) {
+        s.discussionTime -= 15;
+        window.GameSettings.set('wolvesville', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-wolves-time-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('wolvesville');
+      if (s.discussionTime < 180) {
+        s.discussionTime += 15;
+        window.GameSettings.set('wolvesville', s);
+        renderLobbyScreen();
+      }
     });
   };
 
@@ -388,8 +496,11 @@ const WolvesvilleGame = (() => {
     const roleGoal = getRoleGoal(player.role);
     
     let wolfPartners = [];
-    if (player.role === 'werewolf') {
-      wolfPartners = gamePlayers.filter(p => p.role === 'werewolf' && p.id !== player.id).map(p => p.name);
+    const isWolfRole = ['werewolf', 'wolf_seer', 'junior_werewolf'].includes(player.role);
+    if (isWolfRole) {
+      wolfPartners = gamePlayers
+        .filter(p => ['werewolf', 'wolf_seer', 'junior_werewolf'].includes(p.role) && p.id !== player.id)
+        .map(p => `${p.name} (${getRoleArabicName(p.role)})`);
     }
 
     containerEl.innerHTML = `
@@ -490,7 +601,26 @@ const WolvesvilleGame = (() => {
 
   const renderPlayerNightActionScreen = () => {
     const player = activeNightPlayers[nightPlayerIndex];
-    const hasNightAction = ['werewolf', 'serial_killer', 'doctor', 'seer'].includes(player.role);
+    
+    let hasNightAction = false;
+    if (['werewolf', 'junior_werewolf', 'wolf_seer'].includes(player.role)) {
+      hasNightAction = true;
+    } else if (player.role === 'serial_killer') {
+      hasNightAction = true;
+    } else if (player.role === 'doctor') {
+      hasNightAction = true;
+    } else if (player.role === 'seer') {
+      hasNightAction = true;
+    } else if (player.role === 'arsonist') {
+      hasNightAction = true;
+    } else if (player.role === 'cupid' && nightNumber === 1) {
+      hasNightAction = true;
+    } else if (player.role === 'medium') {
+      const deadCount = gamePlayers.filter(p => !p.active).length;
+      if (deadCount > 0) {
+        hasNightAction = true;
+      }
+    }
 
     if (!hasNightAction) {
       renderPretendThinkingScreen(player);
@@ -500,6 +630,15 @@ const WolvesvilleGame = (() => {
   };
 
   const renderPretendThinkingScreen = (player) => {
+    let loverPartner = null;
+    if (lovers.length === 2) {
+      if (lovers[0] === player.id) {
+        loverPartner = gamePlayers.find(p => p.id === lovers[1]);
+      } else if (lovers[1] === player.id) {
+        loverPartner = gamePlayers.find(p => p.id === lovers[0]);
+      }
+    }
+
     containerEl.innerHTML = `
       <div class="game-card wolves-night-view text-center" style="background: #050505; border: 2px solid #111; min-height: 480px; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; color: #bbb;">
         <div>
@@ -510,6 +649,12 @@ const WolvesvilleGame = (() => {
           <div style="background: #0c0c0c; border: 1px solid #1a1a1a; padding: 15px; border-radius: 14px; margin-bottom: 20px; font-size: 0.9rem; color: #888;">
             أنت تؤدي دورك السري الآن. تظاهر بأنك تفكر بتركيز لتشتيت انتباه الآخرين! 🕵️‍♂️
           </div>
+
+          ${loverPartner ? `
+            <div style="margin-top: 15px; background: rgba(255, 94, 98, 0.05); border: 1px dashed rgba(255, 94, 98, 0.2); padding: 10px; border-radius: 12px; font-size: 0.85rem; color: #ff5e62; text-align: center;">
+              💘 شريكك في العشق هو: <strong>${loverPartner.name}</strong> (${getRoleArabicName(loverPartner.role)})
+            </div>
+          ` : ''}
 
           <div style="width: 100%; max-width: 250px; height: 8px; background: #111; border-radius: 10px; margin: 30px auto 10px; overflow: hidden; border: 1px solid #222;">
             <div id="pretend-progress-bar" style="height: 100%; width: 0%; background: #444; transition: width 0.1s linear;"></div>
@@ -559,16 +704,78 @@ const WolvesvilleGame = (() => {
     const possibleTargets = gamePlayers.filter(p => p.active && p.id !== player.id);
     const selfTarget = gamePlayers.find(p => p.id === player.id);
 
+    let loverPartner = null;
+    if (lovers.length === 2) {
+      if (lovers[0] === player.id) {
+        loverPartner = gamePlayers.find(p => p.id === lovers[1]);
+      } else if (lovers[1] === player.id) {
+        loverPartner = gamePlayers.find(p => p.id === lovers[0]);
+      }
+    }
+
     let instructionText = "";
     let targetsListHtml = "";
 
-    if (player.role === 'werewolf') {
+    if (['werewolf', 'junior_werewolf'].includes(player.role)) {
+      let prevTargetNotice = "";
+      if (werewolfTarget !== null) {
+        const prevT = gamePlayers.find(p => p.id === werewolfTarget);
+        if (prevT) {
+          prevTargetNotice = `
+            <div style="background: rgba(255, 94, 98, 0.05); border: 1px dashed rgba(255, 94, 98, 0.2); padding: 8px; border-radius: 8px; font-size: 0.85rem; color: #ff5e62; margin-bottom: 12px; text-align: center;">
+              🐺 الذئاب السابقة حددت الضحية: <strong>${prevT.name}</strong>
+            </div>
+          `;
+        }
+      }
+      
       instructionText = "اختر ضحية لالتهامها مع بقية المستذئبين الليلة 🐺:";
-      targetsListHtml = possibleTargets.map(t => `
+      targetsListHtml = prevTargetNotice + possibleTargets.map(t => `
         <button class="btn btn-outline target-select-btn" data-tid="${t.id}" style="border-color: #222; background: #0c0c0c; color: #e0e0e0; margin-bottom: 8px; width: 100%; justify-content: center; display: inline-flex;">
           <span>${t.name}</span>
         </button>
       `).join('');
+    } else if (player.role === 'wolf_seer') {
+      instructionText = "اختر لاعباً لكشف دوره الدقيق، ثم اختر ضحية الذئاب الليلة:";
+      let prevTargetNotice = "";
+      if (werewolfTarget !== null) {
+        const prevT = gamePlayers.find(p => p.id === werewolfTarget);
+        if (prevT) {
+          prevTargetNotice = `
+            <div style="background: rgba(255, 94, 98, 0.05); border: 1px dashed rgba(255, 94, 98, 0.2); padding: 8px; border-radius: 8px; font-size: 0.85rem; color: #ff5e62; margin-bottom: 12px; text-align: center;">
+              🐺 الذئاب السابقة حددت الضحية: <strong>${prevT.name}</strong>
+            </div>
+          `;
+        }
+      }
+
+      targetsListHtml = `
+        <div style="margin-bottom: 15px;">
+          <div style="font-size: 0.85rem; color: #ffd700; margin-bottom: 5px;">1. كشف الدور الدقيق (انقر على لاعب):</div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            ${possibleTargets.map(t => `
+              <button class="btn btn-outline wolf-seer-reveal-btn" data-tid="${t.id}" style="border-color: #222; background: #0c0c0c; color: #fff;">
+                <span>${t.name}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div id="wolf-seer-reveal-result" style="margin-top: 10px; padding: 10px; background: rgba(255,215,0,0.05); border: 1px dashed rgba(255,215,0,0.2); border-radius: 8px; font-size: 0.9rem; text-align: center; color: #ffd700; display: none;">
+            جاري الكشف...
+          </div>
+        </div>
+        <hr style="border-color: rgba(255,255,255,0.05); margin: 15px 0;">
+        <div>
+          <div style="font-size: 0.85rem; color: #ff5e62; margin-bottom: 5px;">2. ضحية الذئاب الليلة:</div>
+          ${prevTargetNotice}
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            ${possibleTargets.map(t => `
+              <button class="btn btn-outline wolf-seer-victim-btn" data-tid="${t.id}" style="border-color: #222; background: #0c0c0c; color: #fff;">
+                <span>${t.name}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
     } else if (player.role === 'serial_killer') {
       instructionText = "اختر ضحية لتصفيتها وقتلها بالسكين الليلة 🔪:";
       targetsListHtml = possibleTargets.map(t => `
@@ -591,6 +798,43 @@ const WolvesvilleGame = (() => {
           <span>${t.name}</span>
         </button>
       `).join('');
+    } else if (player.role === 'cupid') {
+      instructionText = "اختر لاعبين اثنين لربطهما كعشاق طوال اللعبة 💘:";
+      targetsListHtml = possibleTargets.map(t => `
+        <button class="btn btn-outline target-select-btn" data-tid="${t.id}" style="border-color: #222; background: #0c0c0c; color: #e0e0e0; margin-bottom: 8px; width: 100%; justify-content: center; display: inline-flex;">
+          <span>${t.name}</span>
+        </button>
+      `).join('');
+    } else if (player.role === 'medium') {
+      instructionText = "اختر أحد اللاعبين الموتى لتكشف البلدة عن دوره الحقيقي سراً لك:";
+      const deadPlayers = gamePlayers.filter(p => !p.active);
+      targetsListHtml = deadPlayers.map(t => `
+        <button class="btn btn-outline medium-target-btn" data-tid="${t.id}" style="border-color: #222; background: #0c0c0c; color: #e0e0e0; margin-bottom: 8px; width: 100%; justify-content: center; display: inline-flex;">
+          <span>${t.name}</span>
+        </button>
+      `).join('');
+    } else if (player.role === 'arsonist') {
+      instructionText = "اختر إما صب البنزين على أحد اللاعبين سراً، أو إشعال النار لحرق كل من صببت عليهم البنزين سابقاً 🔥:";
+      targetsListHtml = `
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <button class="btn btn-outline" id="btn-arsonist-douse-mode" style="flex: 1; border-color: #222; background: #0c0c0c; color: #fff;">صب البنزين ⛽</button>
+          <button class="btn btn-outline" id="btn-arsonist-ignite-mode" style="flex: 1; border-color: #222; background: #0c0c0c; color: #ff5e62;">إشعال النار 🔥 (${dousedPlayerIds.length})</button>
+        </div>
+        <div id="arsonist-targets-container" style="display: none;">
+          <div style="font-size: 0.85rem; color: #777; margin-bottom: 8px;">اختر لاعباً لصب البنزين عليه:</div>
+          ${possibleTargets.map(t => {
+            const isAlreadyDoused = dousedPlayerIds.includes(t.id);
+            return `
+              <button class="btn btn-outline arsonist-target-btn" data-tid="${t.id}" ${isAlreadyDoused ? 'disabled' : ''} style="border-color: #222; background: #0c0c0c; color: ${isAlreadyDoused ? '#444' : '#e0e0e0'}; margin-bottom: 8px; width: 100%; justify-content: center; display: inline-flex;">
+                <span>${t.name} ${isAlreadyDoused ? '(مبلل بالبنزين ⛽)' : ''}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <div id="arsonist-ignite-confirm" style="display: none; padding: 15px; background: rgba(255, 94, 98, 0.05); border: 1px dashed rgba(255, 94, 98, 0.2); border-radius: 12px; margin-bottom: 10px; text-align: center; color: #ff5e62;">
+          سيتم حرق جميع اللاعبين المبللين بالبنزين وموتهم فوراً الليلة! 🔥
+        </div>
+      `;
     }
 
     containerEl.innerHTML = `
@@ -600,6 +844,12 @@ const WolvesvilleGame = (() => {
           <h3 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 5px;">${player.name} (${getRoleArabicName(player.role)})</h3>
           <p style="font-size: 0.9rem; color: #888; margin-bottom: 20px; line-height: 1.4;">${instructionText}</p>
           
+          ${loverPartner ? `
+            <div style="margin-top: -10px; margin-bottom: 15px; background: rgba(255, 94, 98, 0.05); border: 1px dashed rgba(255, 94, 98, 0.2); padding: 8px; border-radius: 10px; font-size: 0.8rem; color: #ff5e62; text-align: center;">
+              💘 شريكك في العشق هو: <strong>${loverPartner.name}</strong> (${getRoleArabicName(loverPartner.role)})
+            </div>
+          ` : ''}
+
           <div class="targets-list-grid" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding: 5px;">
             ${targetsListHtml}
           </div>
@@ -621,47 +871,209 @@ const WolvesvilleGame = (() => {
     const targetButtons = containerEl.querySelectorAll('.target-select-btn');
     const resultBox = document.getElementById('seer-result-box');
     let selectedTid = null;
+    let selectedCupidTids = [];
 
-    targetButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        Sounds.playClick();
-        targetButtons.forEach(b => {
-          b.style.borderColor = '#222';
-          b.style.color = '#e0e0e0';
-          b.style.boxShadow = 'none';
-        });
-
-        btn.style.borderColor = '#fff';
-        btn.style.color = '#fff';
-        btn.style.boxShadow = '0 0 5px rgba(255, 255, 255, 0.1)';
-
-        selectedTid = parseInt(btn.getAttribute('data-tid'), 10);
-        
-        if (player.role === 'seer') {
-          const targetPlayer = gamePlayers.find(p => p.id === selectedTid);
-          let teamName = "القرويين 🔵";
-          if (targetPlayer.role === 'werewolf') {
-            teamName = "الذئاب 🔴";
-          } else if (targetPlayer.role === 'fool' || targetPlayer.role === 'serial_killer') {
-            teamName = "المحايدين 🟣";
+    if (player.role === 'cupid') {
+      targetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          const tid = parseInt(btn.getAttribute('data-tid'), 10);
+          
+          if (selectedCupidTids.includes(tid)) {
+            selectedCupidTids = selectedCupidTids.filter(id => id !== tid);
+            btn.style.borderColor = '#222';
+            btn.style.color = '#e0e0e0';
+            btn.style.boxShadow = 'none';
+          } else {
+            if (selectedCupidTids.length < 2) {
+              selectedCupidTids.push(tid);
+              btn.style.borderColor = '#ffd700';
+              btn.style.color = '#fff';
+              btn.style.boxShadow = '0 0 5px rgba(255, 215, 0, 0.2)';
+            } else {
+              showCustomAlert("يمكنك اختيار لاعبين اثنين فقط لرابطة العشاق!");
+            }
           }
+          
+          if (selectedCupidTids.length === 2) {
+            confirmBtn.disabled = false;
+            confirmBtn.style.borderColor = '#444';
+            confirmBtn.style.color = '#fff';
+          } else {
+            confirmBtn.disabled = true;
+            confirmBtn.style.borderColor = '#222';
+            confirmBtn.style.color = '#444';
+          }
+        });
+      });
+    } else if (player.role === 'wolf_seer') {
+      const revealBtns = containerEl.querySelectorAll('.wolf-seer-reveal-btn');
+      const victimBtns = containerEl.querySelectorAll('.wolf-seer-victim-btn');
+      const revealResult = document.getElementById('wolf-seer-reveal-result');
+      
+      let revealed = false;
+      let selectedVictimTid = null;
+      
+      revealBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          const tid = parseInt(btn.getAttribute('data-tid'), 10);
+          const targetPlayer = gamePlayers.find(p => p.id === tid);
+          
+          revealResult.style.display = 'block';
+          revealResult.innerHTML = `🔮 دور اللاعب <strong>${targetPlayer.name}</strong> الدقيق هو: <strong style="color: #fff;">${getRoleArabicName(targetPlayer.role)}</strong>`;
+          
+          revealBtns.forEach(b => b.style.borderColor = '#222');
+          btn.style.borderColor = '#ffd700';
+          revealed = true;
+          
+          if (selectedVictimTid !== null) {
+            confirmBtn.disabled = false;
+            confirmBtn.style.borderColor = '#444';
+            confirmBtn.style.color = '#fff';
+          }
+        });
+      });
+      
+      victimBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          selectedVictimTid = parseInt(btn.getAttribute('data-tid'), 10);
+          
+          victimBtns.forEach(b => b.style.borderColor = '#222');
+          btn.style.borderColor = '#ff5e62';
+          
+          selectedTid = selectedVictimTid;
+          
+          if (revealed) {
+            confirmBtn.disabled = false;
+            confirmBtn.style.borderColor = '#444';
+            confirmBtn.style.color = '#fff';
+          }
+        });
+      });
+    } else if (player.role === 'medium') {
+      const mediumBtns = containerEl.querySelectorAll('.medium-target-btn');
+      
+      mediumBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          const tid = parseInt(btn.getAttribute('data-tid'), 10);
+          const targetPlayer = gamePlayers.find(p => p.id === tid);
+          
+          mediumBtns.forEach(b => b.style.borderColor = '#222');
+          btn.style.borderColor = '#fff';
           
           if (resultBox) {
             resultBox.style.display = 'block';
-            resultBox.innerHTML = `هالة اللاعب سرياً: <strong style="color: #fff;">${teamName}</strong>`;
+            resultBox.innerHTML = `👻 روحه تخبرك أن دوره كان: <strong style="color: #fff;">${getRoleArabicName(targetPlayer.role)}</strong>`;
           }
-        }
-
+          
+          selectedTid = tid;
+          confirmBtn.disabled = false;
+          confirmBtn.style.borderColor = '#444';
+          confirmBtn.style.color = '#fff';
+        });
+      });
+    } else if (player.role === 'arsonist') {
+      const btnDouse = document.getElementById('btn-arsonist-douse-mode');
+      const btnIgnite = document.getElementById('btn-arsonist-ignite-mode');
+      const targetsContainer = document.getElementById('arsonist-targets-container');
+      const igniteConfirm = document.getElementById('arsonist-ignite-confirm');
+      const arsonistTargets = containerEl.querySelectorAll('.arsonist-target-btn');
+      
+      let arsonistAction = null;
+      
+      btnDouse.addEventListener('click', () => {
+        Sounds.playClick();
+        arsonistAction = 'douse';
+        btnDouse.style.borderColor = '#fff';
+        btnDouse.style.background = '#1a1a1a';
+        btnIgnite.style.borderColor = '#222';
+        btnIgnite.style.background = '#0c0c0c';
+        
+        targetsContainer.style.display = 'block';
+        igniteConfirm.style.display = 'none';
+        
+        confirmBtn.disabled = true;
+        confirmBtn.style.borderColor = '#222';
+        confirmBtn.style.color = '#444';
+      });
+      
+      btnIgnite.addEventListener('click', () => {
+        Sounds.playClick();
+        arsonistAction = 'ignite';
+        btnIgnite.style.borderColor = '#ff5e62';
+        btnIgnite.style.background = 'rgba(255, 94, 98, 0.1)';
+        btnDouse.style.borderColor = '#222';
+        btnDouse.style.background = '#0c0c0c';
+        
+        targetsContainer.style.display = 'none';
+        igniteConfirm.style.display = 'block';
+        
+        selectedTid = 'ignite';
         confirmBtn.disabled = false;
-        confirmBtn.style.borderColor = '#444';
+        confirmBtn.style.borderColor = '#ff5e62';
         confirmBtn.style.color = '#fff';
       });
-    });
+      
+      arsonistTargets.forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          arsonistTargets.forEach(b => {
+            b.style.borderColor = '#222';
+          });
+          btn.style.borderColor = '#fff';
+          selectedTid = parseInt(btn.getAttribute('data-tid'), 10);
+          
+          confirmBtn.disabled = false;
+          confirmBtn.style.borderColor = '#444';
+          confirmBtn.style.color = '#fff';
+        });
+      });
+    } else {
+      // Normal single target selection
+      targetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          targetButtons.forEach(b => {
+            b.style.borderColor = '#222';
+            b.style.color = '#e0e0e0';
+            b.style.boxShadow = 'none';
+          });
+
+          btn.style.borderColor = '#fff';
+          btn.style.color = '#fff';
+          btn.style.boxShadow = '0 0 5px rgba(255, 255, 255, 0.1)';
+
+          selectedTid = parseInt(btn.getAttribute('data-tid'), 10);
+          
+          if (player.role === 'seer') {
+            const targetPlayer = gamePlayers.find(p => p.id === selectedTid);
+            let teamName = "القرويين 🔵";
+            if (['werewolf', 'wolf_seer', 'junior_werewolf'].includes(targetPlayer.role)) {
+              teamName = "الذئاب 🔴";
+            } else if (['fool', 'serial_killer', 'cupid', 'arsonist'].includes(targetPlayer.role)) {
+              teamName = "المحايدين 🟣";
+            }
+            
+            if (resultBox) {
+              resultBox.style.display = 'block';
+              resultBox.innerHTML = `هالة اللاعب سرياً: <strong style="color: #fff;">${teamName}</strong>`;
+            }
+          }
+
+          confirmBtn.disabled = false;
+          confirmBtn.style.borderColor = '#444';
+          confirmBtn.style.color = '#fff';
+        });
+      });
+    }
 
     confirmBtn.addEventListener('click', () => {
       Sounds.playClick();
       
-      if (player.role === 'werewolf') {
+      if (['werewolf', 'junior_werewolf', 'wolf_seer'].includes(player.role)) {
         werewolfTarget = selectedTid;
       } else if (player.role === 'serial_killer') {
         killerTarget = selectedTid;
@@ -669,6 +1081,14 @@ const WolvesvilleGame = (() => {
         doctorTarget = selectedTid;
       } else if (player.role === 'seer') {
         seerTarget = selectedTid;
+      } else if (player.role === 'cupid') {
+        lovers = [selectedCupidTids[0], selectedCupidTids[1]];
+      } else if (player.role === 'arsonist') {
+        if (selectedTid === 'ignite') {
+          arsonistIgnite = true;
+        } else {
+          dousedPlayerIds.push(selectedTid);
+        }
       }
 
       goToNextNightPlayer();
@@ -687,15 +1107,45 @@ const WolvesvilleGame = (() => {
   const resolveNightActions = () => {
     let deadPlayers = [];
     
-    if (werewolfTarget !== null && werewolfTarget !== doctorTarget) {
-      deadPlayers.push(werewolfTarget);
+    // 1. Werewolf Target vs Doctor Protection
+    if (werewolfTarget !== null) {
+      if (werewolfTarget !== doctorTarget) {
+        deadPlayers.push(werewolfTarget);
+      }
     }
     
-    if (killerTarget !== null && killerTarget !== doctorTarget) {
-      deadPlayers.push(killerTarget);
+    // 2. Serial Killer Target vs Doctor Protection
+    if (killerTarget !== null) {
+      if (killerTarget !== doctorTarget) {
+        deadPlayers.push(killerTarget);
+      }
+    }
+    
+    // 3. Arsonist Ignite
+    if (arsonistIgnite) {
+      dousedPlayerIds.forEach(pid => {
+        const p = gamePlayers.find(pl => pl.id === pid && pl.active);
+        if (p) {
+          deadPlayers.push(pid);
+        }
+      });
+      dousedPlayerIds = [];
     }
 
     deadPlayers = [...new Set(deadPlayers)];
+
+    // 4. Lovers death cascade
+    if (lovers.length === 2) {
+      const p1Id = lovers[0];
+      const p2Id = lovers[1];
+      const p1WillDie = deadPlayers.includes(p1Id);
+      const p2WillDie = deadPlayers.includes(p2Id);
+      if (p1WillDie && !deadPlayers.includes(p2Id)) {
+        deadPlayers.push(p2Id);
+      } else if (p2WillDie && !deadPlayers.includes(p1Id)) {
+        deadPlayers.push(p1Id);
+      }
+    }
 
     deadPlayers.forEach(pid => {
       const victim = gamePlayers.find(p => p.id === pid);
@@ -707,8 +1157,35 @@ const WolvesvilleGame = (() => {
     let deathLog = [];
     deadPlayers.forEach(pid => {
       const p = gamePlayers.find(p => p.id === pid);
-      deathLog.push(`${p.emoji} <strong>${p.name}</strong> (${getRoleArabicName(p.role)})`);
+      if (!p) return;
+      
+      let loverDeathNote = "";
+      if (lovers.length === 2 && lovers.includes(pid)) {
+        const partnerId = lovers.find(id => id !== pid);
+        const partner = gamePlayers.find(pl => pl.id === partnerId);
+        const partnerDirectlyKilled = (partnerId === werewolfTarget && werewolfTarget !== doctorTarget) || 
+                                      (partnerId === killerTarget && killerTarget !== doctorTarget) || 
+                                      (arsonistIgnite && dousedPlayerIds.includes(partnerId));
+        const selfDirectlyKilled = (pid === werewolfTarget && werewolfTarget !== doctorTarget) || 
+                                   (pid === killerTarget && killerTarget !== doctorTarget) || 
+                                   (arsonistIgnite && dousedPlayerIds.includes(pid));
+                                   
+        if (partnerDirectlyKilled && !selfDirectlyKilled) {
+          loverDeathNote = " (مات حزناً على حبيبه 💔)";
+        }
+      }
+      
+      deathLog.push(`${p.emoji} <strong>${p.name}</strong> (${getRoleArabicName(p.role)})${loverDeathNote}`);
     });
+
+    // Reset night-specific flags for next rounds
+    werewolfTarget = null;
+    killerTarget = null;
+    doctorTarget = null;
+    seerTarget = null;
+    arsonistIgnite = false;
+
+    nightNumber++;
 
     currentPhase = 'day_announce';
     renderDayAnnounceScreen(deathLog);
@@ -770,11 +1247,22 @@ const WolvesvilleGame = (() => {
 
   const startDiscussPhase = () => {
     currentPhase = 'day_discuss';
-    timerVal = 60; 
+    const settings = window.GameSettings ? window.GameSettings.get('wolvesville') : { discussionTime: 45 };
+    timerVal = settings.discussionTime; 
     renderDiscussScreen();
   };
 
   const renderDiscussScreen = () => {
+    const activeGunners = gamePlayers.filter(p => p.active && p.role === 'gunner' && gunnerBullets[p.id] > 0);
+    let gunnerBtnHtml = "";
+    if (activeGunners.length > 0) {
+      gunnerBtnHtml = `
+        <button class="btn btn-accent" id="btn-gunner-shoot-ui" style="background: #ff5e62; border: 1px solid #ff3b30; color: #fff; margin-top: 15px; width: 100%; max-width: 250px; margin-left: auto; margin-right: auto; display: block;">
+          <span>شغل السلاح 🔫</span>
+        </button>
+      `;
+    }
+
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
         <div class="game-header">
@@ -788,11 +1276,13 @@ const WolvesvilleGame = (() => {
           </p>
 
           <div style="font-size: 4rem; font-weight: 900; color: #fff; margin: 20px 0;" id="discuss-timer-val">
-            60
+            ${timerVal}
           </div>
           <button class="btn btn-outline" id="btn-start-discuss-timer" style="margin-bottom: 20px;">
             <span>ابدأ مؤقت النقاش ⏱️</span>
           </button>
+
+          ${gunnerBtnHtml}
         </div>
 
         <div class="active-players-list-simple" style="text-align: right;">
@@ -837,10 +1327,185 @@ const WolvesvilleGame = (() => {
       }, 1000);
     });
 
+    if (activeGunners.length > 0) {
+      document.getElementById('btn-gunner-shoot-ui').addEventListener('click', () => {
+        Sounds.playClick();
+        renderGunnerSelectScreen(activeGunners);
+      });
+    }
+
     document.getElementById('btn-go-to-vote').addEventListener('click', () => {
       clearInterval(timerInterval);
       Sounds.playClick();
       startVotePhase();
+    });
+  };
+
+  const renderGunnerSelectScreen = (activeGunners) => {
+    if (activeGunners.length === 1) {
+      renderGunnerTargetSelection(activeGunners[0]);
+    } else {
+      containerEl.innerHTML = `
+        <div class="game-card animate-fade-in text-center">
+          <div class="game-header">
+            <span class="game-badge">إطلاق النار 🔫</span>
+            <h2>اختر صاحب السلاح</h2>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 20px;">من هو اللاعب صاحب السلاح الذي يريد إطلاق النار الآن؟</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${activeGunners.map(g => `
+              <button class="btn btn-outline gunner-select-player-btn" data-gid="${g.id}">
+                <span>${g.emoji} ${g.name}</span>
+              </button>
+            `).join('')}
+          </div>
+          <button class="btn btn-outline" id="btn-cancel-shoot" style="margin-top: 20px;">إلغاء 🚫</button>
+        </div>
+      `;
+      
+      containerEl.querySelectorAll('.gunner-select-player-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          Sounds.playClick();
+          const gid = parseInt(btn.getAttribute('data-gid'), 10);
+          const gunner = gamePlayers.find(p => p.id === gid);
+          renderGunnerTargetSelection(gunner);
+        });
+      });
+
+      document.getElementById('btn-cancel-shoot').addEventListener('click', () => {
+        Sounds.playClick();
+        renderDiscussScreen();
+      });
+    }
+  };
+
+  const renderGunnerTargetSelection = (gunner) => {
+    const possibleTargets = gamePlayers.filter(p => p.active && p.id !== gunner.id);
+    
+    containerEl.innerHTML = `
+      <div class="game-card animate-fade-in text-center">
+        <div class="game-header">
+          <span class="game-badge">إطلاق النار 🔫</span>
+          <h2>صاحب السلاح: ${gunner.name}</h2>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">اختر اللاعب الذي تريد إطلاق النار عليه وقتله فوراً:</p>
+        
+        <div class="targets-list-grid" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding: 5px;">
+          ${possibleTargets.map(t => `
+            <button class="btn btn-outline gunner-target-btn" data-tid="${t.id}" style="border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.01); color: #fff; width: 100%; justify-content: center; display: inline-flex;">
+              <span>${t.emoji} ${t.name}</span>
+            </button>
+          `).join('')}
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn btn-outline" id="btn-cancel-shoot" style="flex: 1;">إلغاء 🚫</button>
+          <button class="btn btn-primary" id="btn-confirm-shoot" disabled style="flex: 1;">تأكيد الإطلاق 🔫</button>
+        </div>
+      </div>
+    `;
+
+    const confirmBtn = document.getElementById('btn-confirm-shoot');
+    const targetButtons = containerEl.querySelectorAll('.gunner-target-btn');
+    let selectedTid = null;
+
+    targetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        Sounds.playClick();
+        targetButtons.forEach(b => {
+          b.style.borderColor = 'rgba(255,255,255,0.08)';
+        });
+        btn.style.borderColor = '#ff5e62';
+        selectedTid = parseInt(btn.getAttribute('data-tid'), 10);
+        confirmBtn.disabled = false;
+      });
+    });
+
+    document.getElementById('btn-cancel-shoot').addEventListener('click', () => {
+      Sounds.playClick();
+      renderDiscussScreen();
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      Sounds.playClick();
+      shootPlayer(gunner.id, selectedTid);
+    });
+  };
+
+  const shootPlayer = (gunnerId, targetId) => {
+    const target = gamePlayers.find(p => p.id === targetId);
+    if (!target) return;
+    
+    target.active = false;
+    gunnerBullets[gunnerId] = 0;
+    
+    Sounds.playFail(); 
+    
+    let loversDied = true;
+    let deadIds = [targetId];
+    while (loversDied) {
+      loversDied = false;
+      if (lovers.length === 2) {
+        const p1Id = lovers[0];
+        const p2Id = lovers[1];
+        if (deadIds.includes(p1Id) && !deadIds.includes(p2Id)) {
+          deadIds.push(p2Id);
+          loversDied = true;
+        } else if (deadIds.includes(p2Id) && !deadIds.includes(p1Id)) {
+          deadIds.push(p1Id);
+          loversDied = true;
+        }
+      }
+    }
+    
+    deadIds.forEach(pid => {
+      const victim = gamePlayers.find(p => p.id === pid);
+      if (victim) {
+        victim.active = false;
+      }
+    });
+
+    let extraDeathHtml = "";
+    if (deadIds.length > 1) {
+      const otherDead = deadIds.filter(id => id !== targetId).map(id => gamePlayers.find(p => p.id === id));
+      extraDeathHtml = `
+        <div style="margin-top: 15px; color: #ff5e62; font-weight: 700;">
+          💔 وبسبب رابطة العشق، لحق به شريكه وتوفي فوراً:
+          ${otherDead.map(od => `<br>${od.emoji} ${od.name} (${getRoleArabicName(od.role)})`).join('')}
+        </div>
+      `;
+    }
+
+    containerEl.innerHTML = `
+      <div class="game-card wolves-night-view text-center" style="background: #0a0a0a; border: 2px solid #333; padding: 30px; color: #fff;">
+        <span style="font-size: 4rem; display: block; margin-bottom: 20px;">💥</span>
+        <h2 style="font-size: 1.8rem; font-weight: 900; color: #ff3333; margin-bottom: 15px;">دوت طلقة في أرجاء القرية!</h2>
+        <p style="font-size: 1.1rem; line-height: 1.6; color: #ccc;">
+          قام صاحب السلاح بإشهار سلاحه سراً وإطلاق النار على:
+        </p>
+        <div style="background: #111; border: 1px solid #222; padding: 20px; border-radius: 16px; margin: 20px auto; max-width: 300px;">
+          <strong style="font-size: 1.5rem; color: #fff;">${target.emoji} ${target.name}</strong>
+          <span style="display: block; font-size: 1rem; color: #888; margin-top: 8px;">وكان دوره الحقيقي هو:</span>
+          <strong style="display: block; font-size: 1.3rem; color: #ff4a4a; margin-top: 5px;">${getRoleArabicName(target.role)}</strong>
+        </div>
+        ${extraDeathHtml}
+        
+        <div class="game-controls" style="margin-top: 30px;">
+          <button class="btn btn-primary" id="btn-after-shoot-continue">
+            <span>متابعة النهار ➡️</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btn-after-shoot-continue').addEventListener('click', () => {
+      Sounds.playClick();
+      const winner = checkWinConditions();
+      if (winner) {
+        renderGameOverScreen(winner);
+      } else {
+        renderDiscussScreen();
+      }
     });
   };
 
@@ -852,6 +1517,16 @@ const WolvesvilleGame = (() => {
   const renderVoteScreen = () => {
     const activePlayers = gamePlayers.filter(p => p.active);
 
+    const activeMayor = activePlayers.find(p => p.role === 'mayor');
+    let mayorNoticeHtml = "";
+    if (activeMayor) {
+      mayorNoticeHtml = `
+        <div style="background: rgba(255,215,0,0.05); border: 1px dashed rgba(255,215,0,0.2); padding: 8px; border-radius: 8px; font-size: 0.85rem; color: #ffd700; margin-bottom: 12px; text-align: center;">
+          👑 العمدة <strong>${activeMayor.name}</strong> على قيد الحياة وصوته يساوي صوتين!
+        </div>
+      `;
+    }
+
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
         <div class="game-header">
@@ -862,6 +1537,8 @@ const WolvesvilleGame = (() => {
         <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 20px;">
           اختاروا اللاعب الذي حصل على أغلبية الأصوات لشنقه، أو اختاروا تخطي الجولة إذا اتفقتم على ذلك:
         </p>
+
+        ${mayorNoticeHtml}
 
         <div class="targets-list-grid" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding: 5px; margin-bottom: 20px;">
           ${activePlayers.map(p => `
@@ -922,12 +1599,93 @@ const WolvesvilleGame = (() => {
 
     if (victim.role === 'fool') {
       renderGameOverScreen('fool', victim);
+    } else if (victim.role === 'junior_werewolf') {
+      renderJuniorWerewolfRevengeScreen(victim);
     } else {
       showExecutionRevealScreen(victim);
     }
   };
 
-  const showExecutionRevealScreen = (victim) => {
+  const renderJuniorWerewolfRevengeScreen = (juniorWolf) => {
+    const possibleTargets = gamePlayers.filter(p => p.active && p.id !== juniorWolf.id);
+    
+    containerEl.innerHTML = `
+      <div class="game-card wolves-night-view text-center" style="background: #0a0a0a; border: 2px solid #ff5e62; padding: 25px; color: #fff;">
+        <span style="font-size: 3.5rem; display: block; margin-bottom: 20px;">🐺👶</span>
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: #ff5e62; margin-bottom: 10px;">انتقام المستذئب الصغير!</h2>
+        <p style="color: #ccc; font-size: 0.95rem; margin-bottom: 20px;">
+          مرر الهاتف إلى <strong style="color: ${juniorWolf.color};">${juniorWolf.name}</strong> سراً ليختار لاعباً ليموت معه انتقاماً!
+        </p>
+        
+        <div class="targets-list-grid" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding: 5px;">
+          ${possibleTargets.map(t => `
+            <button class="btn btn-outline jw-target-btn" data-tid="${t.id}" style="border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.01); color: #fff; width: 100%; justify-content: center; display: inline-flex;">
+              <span>${t.emoji} ${t.name}</span>
+            </button>
+          `).join('')}
+        </div>
+
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" id="btn-confirm-jw-revenge" disabled style="width: 100%; max-width: 250px;">
+            <span>تنفيذ الانتقام المظلم 💀</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const confirmBtn = document.getElementById('btn-confirm-jw-revenge');
+    const targetButtons = containerEl.querySelectorAll('.jw-target-btn');
+    let selectedTid = null;
+
+    targetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        Sounds.playClick();
+        targetButtons.forEach(b => {
+          b.style.borderColor = 'rgba(255,255,255,0.08)';
+        });
+        btn.style.borderColor = '#ff5e62';
+        selectedTid = parseInt(btn.getAttribute('data-tid'), 10);
+        confirmBtn.disabled = false;
+      });
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      Sounds.playClick();
+      
+      const revengeTarget = gamePlayers.find(p => p.id === selectedTid);
+      if (revengeTarget) {
+        revengeTarget.active = false;
+        
+        let loversDied = true;
+        let deadIds = [revengeTarget.id];
+        while (loversDied) {
+          loversDied = false;
+          if (lovers.length === 2) {
+            const p1Id = lovers[0];
+            const p2Id = lovers[1];
+            if (deadIds.includes(p1Id) && !deadIds.includes(p2Id)) {
+              deadIds.push(p2Id);
+              loversDied = true;
+            } else if (deadIds.includes(p2Id) && !deadIds.includes(p1Id)) {
+              deadIds.push(p1Id);
+              loversDied = true;
+            }
+          }
+        }
+        
+        deadIds.forEach(pid => {
+          const victim = gamePlayers.find(p => p.id === pid);
+          if (victim) {
+            victim.active = false;
+          }
+        });
+      }
+      
+      showExecutionRevealScreen(juniorWolf, revengeTarget);
+    });
+  };
+
+  const showExecutionRevealScreen = (victim, revengeTarget = null) => {
     Sounds.playFail();
     let messageHtml = "";
 
@@ -940,12 +1698,30 @@ const WolvesvilleGame = (() => {
         </div>
       `;
     } else {
+      let revengeHtml = "";
+      if (revengeTarget) {
+        let loverNote = "";
+        if (lovers.length === 2 && lovers.includes(revengeTarget.id)) {
+          const partnerId = lovers.find(id => id !== revengeTarget.id);
+          const partner = gamePlayers.find(pl => pl.id === partnerId);
+          loverNote = `<br>💔 ولحق به حبيبه <strong>${partner.name}</strong> (${getRoleArabicName(partner.role)}) وتوفي فوراً!`;
+        }
+        
+        revengeHtml = `
+          <div style="margin-top: 15px; padding: 12px; background: rgba(255, 94, 98, 0.08); border: 1px solid rgba(255, 94, 98, 0.2); border-radius: 12px; color: #ff5e62; font-size: 0.95rem;">
+            💀 <strong>انتقام الصغير:</strong> بسبب لعنة المستذئب الصغير، سحب معه اللاعب <strong>${revengeTarget.name}</strong> (${getRoleArabicName(revengeTarget.role)}) إلى القبر!
+            ${loverNote}
+          </div>
+        `;
+      }
+
       messageHtml = `
         <div class="victory-box victory-draw" style="margin: 30px 0; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
           <span class="victory-icon">⚖️</span>
           <h2>تم شنق ${victim.name}!</h2>
           <p style="margin-top: 10px; font-size: 0.95rem; color: var(--text-muted);">بعد ربط المشنقة وإعدامه، كشفت البلدة عن هويته الحقيقية وكان:</p>
           <strong style="font-size: 1.6rem; color: #fff; display: block; margin-top: 12px;">${getRoleArabicName(victim.role)}</strong>
+          ${revengeHtml}
         </div>
       `;
     }
@@ -981,20 +1757,28 @@ const WolvesvilleGame = (() => {
 
   const checkWinConditions = () => {
     const activeSK = gamePlayers.filter(p => p.role === 'serial_killer' && p.active).length;
-    const activeWolves = gamePlayers.filter(p => p.role === 'werewolf' && p.active).length;
+    const activeArsonist = gamePlayers.filter(p => p.role === 'arsonist' && p.active).length;
+    const activeWolves = gamePlayers.filter(p => ['werewolf', 'wolf_seer', 'junior_werewolf'].includes(p.role) && p.active).length;
+    const activeVillagers = gamePlayers.filter(p => ['villager', 'seer', 'doctor', 'mayor', 'gunner', 'medium', 'cupid'].includes(p.role) && p.active).length;
     const totalActive = gamePlayers.filter(p => p.active).length;
 
     if (activeSK > 0 && totalActive <= 2) {
-      if (totalActive === 1 || (totalActive === 2 && activeWolves === 0)) {
+      if (totalActive === 1 || (totalActive === 2 && activeWolves === 0 && activeArsonist === 0)) {
         return 'serial_killer';
       }
     }
 
-    if (activeWolves > 0 && activeSK === 0 && activeWolves >= (totalActive - activeWolves)) {
+    if (activeArsonist > 0 && totalActive <= 2) {
+      if (totalActive === 1 || (totalActive === 2 && activeWolves === 0 && activeSK === 0)) {
+        return 'arsonist';
+      }
+    }
+
+    if (activeWolves > 0 && activeSK === 0 && activeArsonist === 0 && activeWolves >= (totalActive - activeWolves)) {
       return 'werewolves';
     }
 
-    if (activeWolves === 0 && activeSK === 0) {
+    if (activeWolves === 0 && activeSK === 0 && activeArsonist === 0) {
       return 'villagers';
     }
 
@@ -1004,6 +1788,44 @@ const WolvesvilleGame = (() => {
   const renderGameOverScreen = (winner, specialVictim = null) => {
     currentPhase = 'game_over';
     Sounds.playSuccess();
+
+    // Award global points
+    if (window.addGlobalPoints) {
+      gamePlayers.forEach(p => {
+        let isWinner = false;
+        let points = 20;
+
+        if (winner === 'villagers') {
+          const isWolf = p.role.includes('werewolf') || p.role.includes('wolf');
+          const isSolo = p.role === 'serial_killer' || p.role === 'arsonist' || p.role === 'fool';
+          if (!isWolf && !isSolo) {
+            isWinner = true;
+            points = 25;
+          }
+        } else if (winner === 'werewolves') {
+          const isWolf = p.role.includes('werewolf') || p.role.includes('wolf');
+          if (isWolf) {
+            isWinner = true;
+            points = 30;
+          }
+        } else if (winner === 'serial_killer' && p.role === 'serial_killer') {
+          isWinner = true;
+          points = 40;
+        } else if (winner === 'arsonist' && p.role === 'arsonist') {
+          isWinner = true;
+          points = 40;
+        } else if (winner === 'fool' && p.role === 'fool') {
+          if (specialVictim && specialVictim.id === p.id) {
+            isWinner = true;
+            points = 40;
+          }
+        }
+
+        if (isWinner) {
+          window.addGlobalPoints(p.id, points);
+        }
+      });
+    }
 
     let winTitle = "";
     let winDescription = "";
@@ -1025,6 +1847,11 @@ const WolvesvilleGame = (() => {
       winDescription = "لقد تمكن القاتل المتسلسل من تصفية الجميع والوقوف بمفرده كناجٍ وحيد بدم بارد! لعبة عبقرية وهادئة.";
       winThemeClass = "victory-team-a"; 
       winIcon = "🔪";
+    } else if (winner === 'arsonist') {
+      winTitle = "فاز الحارق! 🔥";
+      winDescription = "لقد تمكن الحارق من سكب البنزين على الجميع وإشعال النيران ليحرق القرية بالكامل ويقف وحيداً فوق الرماد!";
+      winThemeClass = "victory-draw";
+      winIcon = "🔥";
     } else if (winner === 'fool') {
       winTitle = "فاز الأحمق! 🃏";
       winDescription = `لقد نجح <strong>${specialVictim ? specialVictim.name : 'الأحمق'}</strong> في خداعكم بالكامل وجعلكم تصوتون لشنقه! لقد فاز باللعبة بمفرده بينما خسر الجميع!`;

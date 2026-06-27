@@ -44,6 +44,9 @@ const UndercoverGame = (() => {
           <h4>اختر تصنيف الكلمات:</h4>
           <div class="category-buttons-grid">
             <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
+            ${CustomCreator.getUndercoverPairs().length > 0 ? `
+              <button class="cat-select-btn ${selectedCategories.includes("📝 كروتي المخصصة") ? 'active' : ''}" data-cat="📝 كروتي المخصصة">📝 كروتي المخصصة</button>
+            ` : ''}
             ${Object.keys(WordBank.undercover).map(cat => {
               const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "أشياء عامة": "📦", "حيوانات وطيور": "🦁", "بلدان وعواصم": "🗺️", "ألعاب وتكنولوجيا": "🎮", "أطعمة ومشروبات": "🍔", "ماركات وشركات": "🏷️", "أماكن ومعالم": "🏛️" };
               const isLocked = window.isCategoryLocked('undercover', cat);
@@ -54,6 +57,37 @@ const UndercoverGame = (() => {
             }).join('')}
           </div>
         </div>
+
+        <!-- Role Settings Box -->
+        ${(() => {
+          let settings = window.GameSettings ? window.GameSettings.get('undercover') : { spies: 1, undercovers: 1 };
+          if (settings.spies + settings.undercovers >= playersList.length) {
+            settings.spies = 1;
+            settings.undercovers = playersList.length === 3 ? 0 : 1;
+            window.GameSettings.set('undercover', settings);
+          }
+          return `
+            <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+              <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعدادات الأدوار السرية:</h4>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.9rem; color: #fff;">عدد الجواسيس:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-dec-spies" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-spies-count" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.spies}</span>
+                  <button class="btn btn-outline" id="btn-inc-spies" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">عدد العملاء السرّيين:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-dec-under" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-under-count" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.undercovers}</span>
+                  <button class="btn btn-outline" id="btn-inc-under" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
 
         <div class="active-players-list-simple">
           <h4>اللاعبون المضافون (${playersList.length}):</h4>
@@ -112,6 +146,51 @@ const UndercoverGame = (() => {
       Sounds.playClick();
       startGamePlay();
     });
+
+    // Settings adjustments event listeners
+    document.getElementById('btn-dec-spies').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('undercover');
+      if (s.spies > 1) {
+        s.spies--;
+        window.GameSettings.set('undercover', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-inc-spies').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('undercover');
+      if (s.spies + s.undercovers < playersList.length - 1) {
+        s.spies++;
+        window.GameSettings.set('undercover', s);
+        renderLobbyScreen();
+      } else {
+        showCustomAlert("لا يمكن زيادة عدد الجواسيس! يجب أن يتبقى مواطن واحد على الأقل.");
+      }
+    });
+
+    document.getElementById('btn-dec-under').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('undercover');
+      if (s.undercovers > 0) {
+        s.undercovers--;
+        window.GameSettings.set('undercover', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-inc-under').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('undercover');
+      if (s.spies + s.undercovers < playersList.length - 1) {
+        s.undercovers++;
+        window.GameSettings.set('undercover', s);
+        renderLobbyScreen();
+      } else {
+        showCustomAlert("لا يمكن زيادة عدد العملاء! يجب أن يتبقى مواطن واحد على الأقل.");
+      }
+    });
   };
 
   const startGamePlay = () => {
@@ -130,7 +209,9 @@ const UndercoverGame = (() => {
     // 2. Gather all pairs from chosen categories
     let allPairs = [];
     chosenCats.forEach(cat => {
-      if (WordBank.undercover[cat]) {
+      if (cat === "📝 كروتي المخصصة") {
+        allPairs = allPairs.concat(CustomCreator.getUndercoverPairs());
+      } else if (WordBank.undercover[cat]) {
         allPairs = allPairs.concat(WordBank.undercover[cat]);
       }
     });
@@ -144,17 +225,18 @@ const UndercoverGame = (() => {
     currentWordPair = unplayedPairs[Math.floor(Math.random() * unplayedPairs.length)];
     WordHistoryManager.markAsPlayed('undercover', 'all_cats', currentWordPair);
 
-    // 4. Assign roles
-    const numPlayers = playersList.length;
+    // 4. Assign roles based on settings
+    const settings = window.GameSettings.get('undercover');
     let roles = [];
     
-    if (numPlayers === 3) {
-      roles = ['spy', 'civilian', 'civilian'];
-    } else {
-      roles = ['spy', 'undercover'];
-      while (roles.length < numPlayers) {
-        roles.push('civilian');
-      }
+    for (let i = 0; i < settings.spies; i++) {
+      roles.push('spy');
+    }
+    for (let i = 0; i < settings.undercovers; i++) {
+      roles.push('undercover');
+    }
+    while (roles.length < playersList.length) {
+      roles.push('civilian');
     }
 
     // Shuffle roles using Fisher-Yates for unbiased randomness
@@ -466,8 +548,20 @@ const UndercoverGame = (() => {
   const renderGameOverScreen = (civiliansWin) => {
     if (civiliansWin) {
       Sounds.playSuccess();
+      // Add points to civilians (+10)
+      gamePlayers.forEach(gp => {
+        if (gp.role === 'civilian' && window.addGlobalPoints) {
+          window.addGlobalPoints(gp.id, 10);
+        }
+      });
     } else {
       Sounds.playFail();
+      // Add points to spy and undercover (+20)
+      gamePlayers.forEach(gp => {
+        if ((gp.role === 'spy' || gp.role === 'undercover') && window.addGlobalPoints) {
+          window.addGlobalPoints(gp.id, 20);
+        }
+      });
     }
 
     containerEl.innerHTML = `

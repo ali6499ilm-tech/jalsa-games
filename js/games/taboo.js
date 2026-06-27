@@ -5,7 +5,7 @@ const TabooGame = (() => {
   let teamB = { name: "فريق باء 🔵", players: [], score: 0 };
   
   let currentRound = 1;
-  const maxRounds = 3; // each team plays 3 rounds
+  let maxRounds = 3; // each team plays 3 rounds
   let currentTeam = null; // teamA or teamB
   let describerPlayer = null;
   let wordList = [];
@@ -23,6 +23,9 @@ const TabooGame = (() => {
     playersList = players;
     containerEl = container;
     onExitCallback = onExit;
+
+    const settings = window.GameSettings.get('taboo');
+    maxRounds = settings.rounds;
 
     // Reset scores
     teamA.score = 0;
@@ -107,6 +110,9 @@ const TabooGame = (() => {
           <h4>اختر تصنيف الكلمات:</h4>
           <div class="category-buttons-grid">
             <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
+            ${CustomCreator.getCustomWords().length > 0 ? `
+              <button class="cat-select-btn ${selectedCategories.includes("📝 كروتي المخصصة") ? 'active' : ''}" data-cat="📝 كروتي المخصصة">📝 كروتي المخصصة</button>
+            ` : ''}
             ${Object.keys(WordBank.taboo).map(cat => {
               const icons = { "أشياء عامة": "📦", "أجهزة وتكنولوجيا": "💻", "طعام وشراب": "🍔", "أماكن ومعالم": "🏛️", "مهن ووظائف": "👨‍⚕️", "ماركات وشركات": "🏷️", "حيوانات وحشرات": "🦁" };
               const isLocked = window.isCategoryLocked('taboo', cat);
@@ -117,6 +123,32 @@ const TabooGame = (() => {
             }).join('')}
           </div>
         </div>
+
+        <!-- Settings Box -->
+        ${(() => {
+          const settings = window.GameSettings ? window.GameSettings.get('taboo') : { time: 60, rounds: 3 };
+          return `
+            <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+              <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعدادات اللعبة:</h4>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.9rem; color: #fff;">وقت الجولة:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-taboo-time-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-taboo-time" style="font-weight: 700; min-width: 30px; text-align: center;">${settings.time}ث</span>
+                  <button class="btn btn-outline" id="btn-taboo-time-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">عدد الجولات:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-taboo-rounds-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-taboo-rounds" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.rounds}</span>
+                  <button class="btn btn-outline" id="btn-taboo-rounds-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
 
         <div class="game-controls">
           <button class="btn btn-primary btn-large" id="btn-start-taboo-setup">
@@ -189,6 +221,47 @@ const TabooGame = (() => {
       prepareWords();
       startNewRound();
     });
+
+    // Taboo settings adjustments
+    document.getElementById('btn-taboo-time-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('taboo');
+      if (s.time > 15) {
+        s.time -= 15;
+        window.GameSettings.set('taboo', s);
+        setupCategorySelection();
+      }
+    });
+
+    document.getElementById('btn-taboo-time-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('taboo');
+      if (s.time < 180) {
+        s.time += 15;
+        window.GameSettings.set('taboo', s);
+        setupCategorySelection();
+      }
+    });
+
+    document.getElementById('btn-taboo-rounds-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('taboo');
+      if (s.rounds > 1) {
+        s.rounds--;
+        window.GameSettings.set('taboo', s);
+        setupCategorySelection();
+      }
+    });
+
+    document.getElementById('btn-taboo-rounds-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('taboo');
+      if (s.rounds < 5) {
+        s.rounds++;
+        window.GameSettings.set('taboo', s);
+        setupCategorySelection();
+      }
+    });
   };
 
   const prepareWords = () => {
@@ -205,7 +278,15 @@ const TabooGame = (() => {
 
     let sourceWords = [];
     chosenCats.forEach(cat => {
-      if (WordBank.taboo[cat]) {
+      if (cat === "📝 كروتي المخصصة") {
+        const customWords = CustomCreator.getCustomWords().map(w => {
+          return {
+            word: w,
+            forbidden: ["لا تنطق الكلمة", "لا تشر إليها بيديك", "لا تهمس بها", "لا تترجمها", "لا تقل الحرف الأول"]
+          };
+        });
+        sourceWords = sourceWords.concat(customWords);
+      } else if (WordBank.taboo[cat]) {
         sourceWords = sourceWords.concat(WordBank.taboo[cat]);
       }
     });
@@ -226,7 +307,9 @@ const TabooGame = (() => {
 
     roundScore = 0;
     roundWordsLog = [];
-    timeLeft = 60;
+    
+    const settings = window.GameSettings.get('taboo');
+    timeLeft = settings.time;
 
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
@@ -460,15 +543,25 @@ const TabooGame = (() => {
       winnerName = teamA.name;
       alertClass = "victory-team-a";
       Sounds.playSuccess();
+      if (window.addGlobalPoints) {
+        teamA.players.forEach(p => window.addGlobalPoints(p.id, teamA.score * 10));
+      }
     } else if (teamB.score > teamA.score) {
       winnerName = teamB.name;
       alertClass = "victory-team-b";
       Sounds.playSuccess();
+      if (window.addGlobalPoints) {
+        teamB.players.forEach(p => window.addGlobalPoints(p.id, teamB.score * 10));
+      }
     } else {
       isDraw = true;
       winnerName = "تعادل الفريقين!";
       alertClass = "victory-draw";
       Sounds.playSuccess();
+      if (window.addGlobalPoints) {
+        teamA.players.forEach(p => window.addGlobalPoints(p.id, teamA.score * 10));
+        teamB.players.forEach(p => window.addGlobalPoints(p.id, teamB.score * 10));
+      }
     }
 
     containerEl.innerHTML = `

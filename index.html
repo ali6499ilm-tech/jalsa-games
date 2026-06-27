@@ -34,6 +34,9 @@
           <button class="btn btn-primary btn-large" id="btn-start-app" style="width: 100%;">
             <span>ابدأ اللعب الآن 🚀</span>
           </button>
+          <button class="btn btn-outline" id="btn-home-custom-creator" style="width: 100%; border-color: var(--primary); color: #fff;">
+            <span>📝 صانع المحتوى المخصص</span>
+          </button>
           <button class="btn btn-outline" id="btn-home-buy-pro" style="width: 100%; border-color: #ffd700; color: #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.15);">
             <span>💎 تفعيل النسخة البرو (Pro)</span>
           </button>
@@ -96,6 +99,15 @@
         <div class="game-header">
           <span class="game-badge">كتالوج الألعاب</span>
           <h2>ماذا نلعب اليوم؟ 🎲</h2>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <button class="btn btn-outline" id="btn-show-global-scoreboard" style="flex: 1; border-color: var(--accent); color: var(--accent); font-weight: 700; font-size: 0.9rem; padding: 12px 5px;">
+            🏆 نقاط السهرة
+          </button>
+          <button class="btn btn-outline" id="btn-custom-creator-games" style="flex: 1; border-color: var(--primary); color: #fff; font-size: 0.9rem; padding: 12px 5px;">
+            📝 كروتي الخاصة
+          </button>
         </div>
 
         <div class="games-grid">
@@ -189,7 +201,7 @@
               <span>🐺</span>
             </div>
             <div class="game-select-info">
-              <h3>ذئاب قروية (Wolvesville)</h3>
+              <h3>الذئاب والقرويون (Wolvesville)</h3>
               <p>لعبة الغموض والشك الكلاسيكية! ذئاب وقرويون، وأدوار سرية وتصويت نهاراً للقضاء على الأعداء.</p>
               <span class="game-player-count-badge">4 - 16 لاعب</span>
             </div>
@@ -202,6 +214,72 @@
           </button>
           <button class="btn btn-outline btn-large" id="btn-back-players" style="width: 100%;">
             <span>تعديل اللاعبين 👥</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. CUSTOM CREATOR SCREEN -->
+    <div class="screen" id="screen-custom-creator">
+      <div class="game-card animate-fade-in">
+        <div class="game-header">
+          <span class="game-badge">منشئ المحتوى</span>
+          <h2>كروتي وأسئلتي المخصصة 📝</h2>
+        </div>
+
+        <div class="custom-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px;">
+          <button class="btn btn-outline btn-tab active" data-tab="undercover" style="flex: 1; padding: 10px; font-size: 0.9rem; white-space: nowrap;">🕵️‍♂️ الجاسوس</button>
+          <button class="btn btn-outline btn-tab" data-tab="wyr" style="flex: 1; padding: 10px; font-size: 0.9rem; white-space: nowrap;">🤔 لو خيروك</button>
+          <button class="btn btn-outline btn-tab" data-tab="tod" style="flex: 1; padding: 10px; font-size: 0.9rem; white-space: nowrap;">🍾 صراحة/تحدي</button>
+          <button class="btn btn-outline btn-tab" data-tab="words" style="flex: 1; padding: 10px; font-size: 0.9rem; white-space: nowrap;">🎭 كلمات عامة</button>
+        </div>
+
+        <!-- Undercover Tab content -->
+        <div class="tab-content" id="tab-undercover-content">
+          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="input-uc-civilian" class="input-custom" placeholder="كلمة المواطن (مثال: تفاح)" style="flex: 1; font-size: 0.9rem;">
+            <input type="text" id="input-uc-undercover" class="input-custom" placeholder="كلمة الجاسوس (مثال: برتقال)" style="flex: 1; font-size: 0.9rem;">
+          </div>
+          <button class="btn btn-primary" id="btn-add-uc" style="width: 100%; margin-bottom: 20px;">إضافة ثنائي كلمات للجاسوس ➕</button>
+          <div class="added-items-list" id="list-uc" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <!-- Would You Rather Tab content -->
+        <div class="tab-content" id="tab-wyr-content" style="display: none;">
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="input-wyr-a" class="input-custom" placeholder="الخيار الأول (أ) (مثال: تعيش وحيداً في جزيرة)">
+            <input type="text" id="input-wyr-b" class="input-custom" placeholder="الخيار الثاني (ب) (مثال: تعيش في مدينة مزدحمة)">
+          </div>
+          <button class="btn btn-primary" id="btn-add-wyr" style="width: 100%; margin-bottom: 20px;">إضافة سؤال لو خيروك ➕</button>
+          <div class="added-items-list" id="list-wyr" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <!-- Truth or Dare Tab content -->
+        <div class="tab-content" id="tab-tod-content" style="display: none;">
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <button class="btn btn-outline" id="btn-tod-type-truth" style="flex: 1; border-color: #00f2fe; color: #00f2fe; background: rgba(0, 242, 254, 0.1);">💬 صراحة</button>
+              <button class="btn btn-outline" id="btn-tod-type-dare" style="flex: 1; border-color: rgba(255,255,255,0.2); color: #fff;">🔥 تحدي</button>
+            </div>
+            <input type="text" id="input-tod-text" class="input-custom" placeholder="اكتب سؤال الصراحة هنا...">
+          </div>
+          <button class="btn btn-primary" id="btn-add-tod" style="width: 100%; margin-bottom: 20px;">إضافة كرت صراحة/تحدي ➕</button>
+          <div class="added-items-list" id="list-tod" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <!-- General Words Tab content (for Taboo, Charades, Bomb) -->
+        <div class="tab-content" id="tab-words-content" style="display: none;">
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="input-word-text" class="input-custom" placeholder="اكتب الكلمة/العبارة (مثال: سوبرمان)">
+          </div>
+          <button class="btn btn-primary" id="btn-add-word" style="width: 100%; margin-bottom: 20px;">إضافة كلمة ➕</button>
+          <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: -15px; margin-bottom: 15px;">سيتم استخدام هذه الكلمات في ألعاب: بدون كلام، وقنبلة الكلمات، وقول بس لا تقول.</p>
+          <div class="added-items-list" id="list-words" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <div class="game-controls" style="margin-top: 20px;">
+          <button class="btn btn-outline" id="btn-custom-creator-back" style="width: 100%;">
+            <span>العودة للرئيسية 🚪</span>
           </button>
         </div>
       </div>
@@ -231,6 +309,18 @@
   <script src="js/games/truth_or_dare.js"></script>
   <script src="js/games/five_seconds.js"></script>
   <script src="js/games/wolvesville.js"></script>
+  <script src="js/custom_creator.js"></script>
   <script src="js/main.js"></script>
+  
+  <!-- Service Worker registration for PWA offline capabilities -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('Service Worker registered successfully!', reg.scope))
+          .catch((err) => console.error('Service Worker registration failed:', err));
+      });
+    }
+  </script>
 </body>
 </html>

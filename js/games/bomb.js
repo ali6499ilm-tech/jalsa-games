@@ -58,6 +58,9 @@ const BombGame = (() => {
           <h4>اختر تصنيف الأسئلة:</h4>
           <div class="category-buttons-grid">
             <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
+            ${CustomCreator.getCustomWords().length > 0 ? `
+              <button class="cat-select-btn ${selectedCategories.includes("📝 كروتي المخصصة") ? 'active' : ''}" data-cat="📝 كروتي المخصصة">📝 كروتي المخصصة</button>
+            ` : ''}
             ${Object.keys(WordBank.bomb).map(cat => {
               const icons = { "فواكه وخضروات": "🍎", "وظائف ومهن": "👨‍⚕️", "نوادي ومنتخبات": "🏆", "ألعاب وتكنولوجيا": "🎮", "أطعمة ومشروبات": "🍔", "ماركات وشركات": "🏷️", "بلدان وعواصم": "🗺️", "تصنيفات أخرى": "🏷️" };
               const isLocked = window.isCategoryLocked('bomb', cat);
@@ -68,6 +71,32 @@ const BombGame = (() => {
             }).join('')}
           </div>
         </div>
+
+        <!-- Timer Settings Box -->
+        ${(() => {
+          const settings = window.GameSettings ? window.GameSettings.get('bomb') : { minTime: 20, maxTime: 40 };
+          return `
+            <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+              <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ مؤقت القنبلة العشوائي (ثوانٍ):</h4>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.9rem; color: #fff;">الحد الأدنى للوقت:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-bomb-min-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-bomb-min" style="font-weight: 700; min-width: 30px; text-align: center;">${settings.minTime}ث</span>
+                  <button class="btn btn-outline" id="btn-bomb-min-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">الحد الأقصى للوقت:</span>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  <button class="btn btn-outline" id="btn-bomb-max-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
+                  <span id="lbl-bomb-max" style="font-weight: 700; min-width: 30px; text-align: center;">${settings.maxTime}ث</span>
+                  <button class="btn btn-outline" id="btn-bomb-max-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
 
         <div class="active-players-list-simple">
           <h4>اللاعبون المشاركون (${gamePlayers.filter(p => p.active).length}):</h4>
@@ -139,7 +168,9 @@ const BombGame = (() => {
 
       let allPrompts = [];
       chosenCats.forEach(cat => {
-        if (WordBank.bomb[cat]) {
+        if (cat === "📝 كروتي المخصصة") {
+          allPrompts = allPrompts.concat(CustomCreator.getCustomWords());
+        } else if (WordBank.bomb[cat]) {
           allPrompts = allPrompts.concat(WordBank.bomb[cat]);
         }
       });
@@ -153,11 +184,57 @@ const BombGame = (() => {
       currentCategory = unplayedPrompts[Math.floor(Math.random() * unplayedPrompts.length)];
       WordHistoryManager.markAsPlayed('bomb', 'all_prompts', currentCategory);
 
-      // Set random duration (25 to 45 seconds)
-      maxDuration = Math.floor(Math.random() * 20) + 25;
+      // Set random duration based on settings
+      const bombSettings = window.GameSettings.get('bomb');
+      maxDuration = Math.floor(Math.random() * (bombSettings.maxTime - bombSettings.minTime + 1)) + bombSettings.minTime;
       timerVal = maxDuration;
       
       startCountdown();
+    });
+
+    // Bomb settings adjustments
+    document.getElementById('btn-bomb-min-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('bomb');
+      if (s.minTime > 10) {
+        s.minTime -= 5;
+        window.GameSettings.set('bomb', s);
+        renderLobbyScreen();
+      }
+    });
+
+    document.getElementById('btn-bomb-min-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('bomb');
+      if (s.minTime + 5 < s.maxTime) {
+        s.minTime += 5;
+        window.GameSettings.set('bomb', s);
+        renderLobbyScreen();
+      } else {
+        showCustomAlert("الحد الأدنى يجب أن يكون أقل من الحد الأقصى!");
+      }
+    });
+
+    document.getElementById('btn-bomb-max-dec').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('bomb');
+      if (s.maxTime - 5 > s.minTime) {
+        s.maxTime -= 5;
+        window.GameSettings.set('bomb', s);
+        renderLobbyScreen();
+      } else {
+        showCustomAlert("الحد الأقصى يجب أن يكون أكبر من الحد الأدنى!");
+      }
+    });
+
+    document.getElementById('btn-bomb-max-inc').addEventListener('click', () => {
+      Sounds.playClick();
+      const s = window.GameSettings.get('bomb');
+      if (s.maxTime < 90) {
+        s.maxTime += 5;
+        window.GameSettings.set('bomb', s);
+        renderLobbyScreen();
+      }
     });
   };
 
@@ -343,6 +420,9 @@ const BombGame = (() => {
   const showFinalWinner = () => {
     Sounds.playSuccess();
     const winner = gamePlayers.find(p => p.active);
+    if (winner && window.addGlobalPoints) {
+      window.addGlobalPoints(winner.id, 20); // +20 points for winning the word bomb!
+    }
 
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
@@ -404,7 +484,9 @@ const BombGame = (() => {
 
     let allPrompts = [];
     chosenCats.forEach(cat => {
-      if (WordBank.bomb[cat]) {
+      if (cat === "📝 كروتي المخصصة") {
+        allPrompts = allPrompts.concat(CustomCreator.getCustomWords());
+      } else if (WordBank.bomb[cat]) {
         allPrompts = allPrompts.concat(WordBank.bomb[cat]);
       }
     });
@@ -417,7 +499,8 @@ const BombGame = (() => {
     currentCategory = unplayedPrompts[Math.floor(Math.random() * unplayedPrompts.length)];
     WordHistoryManager.markAsPlayed('bomb', 'all_prompts', currentCategory);
 
-    maxDuration = Math.floor(Math.random() * 20) + 25;
+    const bombSettings = window.GameSettings.get('bomb');
+    maxDuration = Math.floor(Math.random() * (bombSettings.maxTime - bombSettings.minTime + 1)) + bombSettings.minTime;
     timerVal = maxDuration;
     
     startCountdown();
