@@ -1,0 +1,9 @@
+@echo off
+echo [1/3] Preparing files...
+git add .
+echo [2/3] Committing changes...
+git commit -m "auto update"
+echo [3/3] Uploading to GitHub...
+git push origin main
+echo Done! Updated successfully.
+pause

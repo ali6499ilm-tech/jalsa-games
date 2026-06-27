@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "اكتب_هنا_اسم_حزمة_التطبيق_مثلا_com.yourdomain.app",
+      "sha256_cert_fingerprints": [
+        "اكتب_هنا_بصمة_SHA256_الخاصة_بمفتاح_التوقيع"
+      ]
+    }
+  }
+]
