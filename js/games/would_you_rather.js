@@ -136,7 +136,8 @@ const WouldYouRatherGame = (() => {
       if (s.rounds > 1) {
         s.rounds--;
         window.GameSettings.set('would_you_rather', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-wyr-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
 
@@ -146,7 +147,8 @@ const WouldYouRatherGame = (() => {
       if (s.rounds < 5) {
         s.rounds++;
         window.GameSettings.set('would_you_rather', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-wyr-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
   };

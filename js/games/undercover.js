@@ -107,6 +107,17 @@ const UndercoverGame = (() => {
 
     // Category button selection toggle
     const catButtons = containerEl.querySelectorAll('.cat-select-btn');
+    const updateCategoryButtonsUI = () => {
+      catButtons.forEach(b => {
+        const bCat = b.getAttribute('data-cat');
+        if (selectedCategories.includes(bCat)) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+    };
+
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         Sounds.playClick();
@@ -135,7 +146,7 @@ const UndercoverGame = (() => {
             selectedCategories = ["عشوائي"];
           }
         }
-        renderLobbyScreen();
+        updateCategoryButtonsUI();
       });
     });
 
@@ -166,7 +177,8 @@ const UndercoverGame = (() => {
         s.spies--;
         s.undercovers = 0;
         window.GameSettings.set('undercover', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-spies-count');
+        if (lbl) lbl.innerText = s.spies;
       }
     });
 
@@ -177,7 +189,8 @@ const UndercoverGame = (() => {
       if (s.spies < playersList.length - 1) {
         s.spies++;
         window.GameSettings.set('undercover', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-spies-count');
+        if (lbl) lbl.innerText = s.spies;
       } else {
         showCustomAlert("لا يمكن زيادة عدد الجواسيس! يجب أن يتبقى مواطن واحد على الأقل.");
       }

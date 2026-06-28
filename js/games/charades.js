@@ -182,7 +182,19 @@ const CharadesGame = (() => {
       });
     }
 
+    // Category button selection toggle
     const catButtons = containerEl.querySelectorAll('.cat-select-btn');
+    const updateCategoryButtonsUI = () => {
+      catButtons.forEach(b => {
+        const bCat = b.getAttribute('data-cat');
+        if (selectedCategories.includes(bCat)) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+    };
+
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         Sounds.playClick();
@@ -211,7 +223,7 @@ const CharadesGame = (() => {
             selectedCategories = ["عشوائي"];
           }
         }
-        setupCategorySelection();
+        updateCategoryButtonsUI();
       });
     });
 
@@ -248,7 +260,8 @@ const CharadesGame = (() => {
       if (s.time > 15) {
         s.time -= 15;
         window.GameSettings.set('charades', s);
-        setupCategorySelection();
+        const lbl = document.getElementById('lbl-charades-time');
+        if (lbl) lbl.innerText = s.time + "ث";
       }
     });
 
@@ -258,7 +271,8 @@ const CharadesGame = (() => {
       if (s.time < 180) {
         s.time += 15;
         window.GameSettings.set('charades', s);
-        setupCategorySelection();
+        const lbl = document.getElementById('lbl-charades-time');
+        if (lbl) lbl.innerText = s.time + "ث";
       }
     });
 
@@ -268,7 +282,8 @@ const CharadesGame = (() => {
       if (s.rounds > 1) {
         s.rounds--;
         window.GameSettings.set('charades', s);
-        setupCategorySelection();
+        const lbl = document.getElementById('lbl-charades-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
 
@@ -278,7 +293,8 @@ const CharadesGame = (() => {
       if (s.rounds < 5) {
         s.rounds++;
         window.GameSettings.set('charades', s);
-        setupCategorySelection();
+        const lbl = document.getElementById('lbl-charades-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
   };

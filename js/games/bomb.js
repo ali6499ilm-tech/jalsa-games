@@ -124,6 +124,17 @@ const BombGame = (() => {
 
     // Category button selection toggle
     const catButtons = containerEl.querySelectorAll('.cat-select-btn');
+    const updateCategoryButtonsUI = () => {
+      catButtons.forEach(b => {
+        const bCat = b.getAttribute('data-cat');
+        if (selectedCategories.includes(bCat)) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+    };
+
     catButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         Sounds.playClick();
@@ -152,7 +163,7 @@ const BombGame = (() => {
             selectedCategories = ["عشوائي"];
           }
         }
-        renderLobbyScreen();
+        updateCategoryButtonsUI();
       });
     });
 
@@ -218,7 +229,8 @@ const BombGame = (() => {
       if (s.minTime > 10) {
         s.minTime -= 5;
         window.GameSettings.set('bomb', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-bomb-min');
+        if (lbl) lbl.innerText = s.minTime + "ث";
       }
     });
 
@@ -228,7 +240,8 @@ const BombGame = (() => {
       if (s.minTime + 5 < s.maxTime) {
         s.minTime += 5;
         window.GameSettings.set('bomb', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-bomb-min');
+        if (lbl) lbl.innerText = s.minTime + "ث";
       } else {
         showCustomAlert("الحد الأدنى يجب أن يكون أقل من الحد الأقصى!");
       }
@@ -240,7 +253,8 @@ const BombGame = (() => {
       if (s.maxTime - 5 > s.minTime) {
         s.maxTime -= 5;
         window.GameSettings.set('bomb', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-bomb-max');
+        if (lbl) lbl.innerText = s.maxTime + "ث";
       } else {
         showCustomAlert("الحد الأقصى يجب أن يكون أكبر من الحد الأدنى!");
       }
@@ -252,7 +266,8 @@ const BombGame = (() => {
       if (s.maxTime < 90) {
         s.maxTime += 5;
         window.GameSettings.set('bomb', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-bomb-max');
+        if (lbl) lbl.innerText = s.maxTime + "ث";
       }
     });
   };

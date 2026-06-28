@@ -149,7 +149,8 @@ const FiveSecondsGame = (() => {
       if (s.time > 3) {
         s.time--;
         window.GameSettings.set('five_seconds', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-5s-time');
+        if (lbl) lbl.innerText = s.time + "ث";
       }
     });
 
@@ -159,7 +160,8 @@ const FiveSecondsGame = (() => {
       if (s.time < 15) {
         s.time++;
         window.GameSettings.set('five_seconds', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-5s-time');
+        if (lbl) lbl.innerText = s.time + "ث";
       }
     });
 
@@ -169,7 +171,8 @@ const FiveSecondsGame = (() => {
       if (s.rounds > 1) {
         s.rounds--;
         window.GameSettings.set('five_seconds', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-5s-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
 
@@ -179,7 +182,8 @@ const FiveSecondsGame = (() => {
       if (s.rounds < 5) {
         s.rounds++;
         window.GameSettings.set('five_seconds', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-5s-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
   };

@@ -142,7 +142,8 @@ const TruthOrDareGame = (() => {
       if (s.rounds > 1) {
         s.rounds--;
         window.GameSettings.set('truth_or_dare', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-tod-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
 
@@ -152,7 +153,8 @@ const TruthOrDareGame = (() => {
       if (s.rounds < 5) {
         s.rounds++;
         window.GameSettings.set('truth_or_dare', s);
-        renderLobbyScreen();
+        const lbl = document.getElementById('lbl-tod-rounds');
+        if (lbl) lbl.innerText = s.rounds;
       }
     });
   };
