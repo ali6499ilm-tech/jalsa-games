@@ -41,7 +41,12 @@ const UndercoverGame = (() => {
         </div>
 
         <div class="category-selection-box">
-          <h4>اختر تصنيف الكلمات:</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0;">اختر تصنيف الكلمات:</h4>
+            <button class="btn btn-outline" id="btn-quick-add-uc" style="font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 4px; border-color: var(--primary); color: #fff;">
+              <span>➕ إضافة كروت</span>
+            </button>
+          </div>
           <div class="category-buttons-grid">
             <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
             ${CustomCreator.getUndercoverPairs().length > 0 ? `
@@ -60,29 +65,21 @@ const UndercoverGame = (() => {
 
         <!-- Role Settings Box -->
         ${(() => {
-          let settings = window.GameSettings ? window.GameSettings.get('undercover') : { spies: 1, undercovers: 1 };
-          if (settings.spies + settings.undercovers >= playersList.length) {
+          let settings = window.GameSettings ? window.GameSettings.get('undercover') : { spies: 1, undercovers: 0 };
+          settings.undercovers = 0; // force it to be 0
+          if (settings.spies >= playersList.length) {
             settings.spies = 1;
-            settings.undercovers = playersList.length === 3 ? 0 : 1;
-            window.GameSettings.set('undercover', settings);
           }
+          window.GameSettings.set('undercover', settings);
           return `
             <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
               <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعدادات الأدوار السرية:</h4>
-              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
                 <span style="font-size: 0.9rem; color: #fff;">عدد الجواسيس:</span>
                 <div style="display: flex; gap: 5px; align-items: center;">
                   <button class="btn btn-outline" id="btn-dec-spies" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
                   <span id="lbl-spies-count" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.spies}</span>
                   <button class="btn btn-outline" id="btn-inc-spies" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
-                </div>
-              </div>
-              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.9rem; color: #fff;">عدد العملاء السرّيين:</span>
-                <div style="display: flex; gap: 5px; align-items: center;">
-                  <button class="btn btn-outline" id="btn-dec-under" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
-                  <span id="lbl-under-count" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.undercovers}</span>
-                  <button class="btn btn-outline" id="btn-inc-under" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
                 </div>
               </div>
             </div>
@@ -147,12 +144,27 @@ const UndercoverGame = (() => {
       startGamePlay();
     });
 
+    // Quick Add Cards Modal Event Listener
+    const quickAddBtn = containerEl.querySelector('#btn-quick-add-uc');
+    if (quickAddBtn) {
+      quickAddBtn.addEventListener('click', () => {
+        Sounds.playClick();
+        window.openQuickAddModal('undercover', () => {
+          if (CustomCreator.getUndercoverPairs().length > 0) {
+            selectedCategories = ["📝 كروتي المخصصة"];
+          }
+          renderLobbyScreen();
+        });
+      });
+    }
+
     // Settings adjustments event listeners
     document.getElementById('btn-dec-spies').addEventListener('click', () => {
       Sounds.playClick();
       const s = window.GameSettings.get('undercover');
       if (s.spies > 1) {
         s.spies--;
+        s.undercovers = 0;
         window.GameSettings.set('undercover', s);
         renderLobbyScreen();
       }
@@ -161,34 +173,13 @@ const UndercoverGame = (() => {
     document.getElementById('btn-inc-spies').addEventListener('click', () => {
       Sounds.playClick();
       const s = window.GameSettings.get('undercover');
-      if (s.spies + s.undercovers < playersList.length - 1) {
+      s.undercovers = 0;
+      if (s.spies < playersList.length - 1) {
         s.spies++;
         window.GameSettings.set('undercover', s);
         renderLobbyScreen();
       } else {
         showCustomAlert("لا يمكن زيادة عدد الجواسيس! يجب أن يتبقى مواطن واحد على الأقل.");
-      }
-    });
-
-    document.getElementById('btn-dec-under').addEventListener('click', () => {
-      Sounds.playClick();
-      const s = window.GameSettings.get('undercover');
-      if (s.undercovers > 0) {
-        s.undercovers--;
-        window.GameSettings.set('undercover', s);
-        renderLobbyScreen();
-      }
-    });
-
-    document.getElementById('btn-inc-under').addEventListener('click', () => {
-      Sounds.playClick();
-      const s = window.GameSettings.get('undercover');
-      if (s.spies + s.undercovers < playersList.length - 1) {
-        s.undercovers++;
-        window.GameSettings.set('undercover', s);
-        renderLobbyScreen();
-      } else {
-        showCustomAlert("لا يمكن زيادة عدد العملاء! يجب أن يتبقى مواطن واحد على الأقل.");
       }
     });
   };
@@ -572,8 +563,8 @@ const UndercoverGame = (() => {
 
         <div class="victory-box ${civiliansWin ? 'victory-civilians' : 'victory-spies'}">
           <span class="victory-icon">${civiliansWin ? '🎉' : '🕵️‍♂️'}</span>
-          <h2>${civiliansWin ? 'فاز المواطنون!' : 'فاز الجاسوس والعميل!'}</h2>
-          <p>${civiliansWin ? 'نجحتم في كشف الجواسيس وتطهير الجلسة!' : 'نجح الجاسوس والعميل في التخفي وخداع الجميع!'}</p>
+          <h2>${civiliansWin ? 'فاز المواطنون!' : 'فاز الجاسوس!'}</h2>
+          <p>${civiliansWin ? 'نجحتم في كشف الجواسيس وتطهير الجلسة!' : 'نجح الجاسوس في التخفي وخداع الجميع!'}</p>
         </div>
 
         <div class="final-roles-table">

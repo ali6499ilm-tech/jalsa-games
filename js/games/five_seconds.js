@@ -50,7 +50,12 @@ const FiveSecondsGame = (() => {
         </div>
 
         <div class="category-selection-box" style="margin-bottom: 20px;">
-          <h4>اختر الأسئلة:</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0;">اختر الأسئلة:</h4>
+            <button class="btn btn-outline" id="btn-quick-add-5s" style="font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 4px; border-color: var(--primary); color: #fff;">
+              <span>➕ إضافة كروت</span>
+            </button>
+          </div>
           <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
             <button class="btn btn-outline mode-btn ${playMode === 'default' ? 'active' : ''}" id="btn-5s-mode-default" style="flex: 1; padding: 15px 10px;">
               <span style="font-size: 1.5rem; display: block; margin-bottom: 5px;">🌍</span>
@@ -117,6 +122,19 @@ const FiveSecondsGame = (() => {
       btnCustom.classList.add('active');
       btnDefault.classList.remove('active');
     });
+
+    const quickAddBtn = document.getElementById('btn-quick-add-5s');
+    if (quickAddBtn) {
+      quickAddBtn.addEventListener('click', () => {
+        Sounds.playClick();
+        window.openQuickAddModal('five_seconds', () => {
+          if (CustomCreator.getCustomWords().length > 0) {
+            playMode = 'custom';
+          }
+          renderLobbyScreen();
+        });
+      });
+    }
 
     document.getElementById('btn-5s-start-lobby').addEventListener('click', () => {
       Sounds.playClick();

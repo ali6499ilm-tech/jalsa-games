@@ -107,7 +107,12 @@ const TabooGame = (() => {
         </div>
 
         <div class="category-selection-box">
-          <h4>اختر تصنيف الكلمات:</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0;">اختر تصنيف الكلمات:</h4>
+            <button class="btn btn-outline" id="btn-quick-add-taboo" style="font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 4px; border-color: var(--primary); color: #fff;">
+              <span>➕ إضافة كروت</span>
+            </button>
+          </div>
           <div class="category-buttons-grid">
             <button class="cat-select-btn ${selectedCategories.includes("عشوائي") ? 'active' : ''}" data-cat="عشوائي">🎲 عشوائي</button>
             ${CustomCreator.getCustomWords().length > 0 ? `
@@ -209,6 +214,20 @@ const TabooGame = (() => {
         setupCategorySelection();
       });
     });
+
+    // Quick Add Cards Modal Event Listener
+    const quickAddBtn = containerEl.querySelector('#btn-quick-add-taboo');
+    if (quickAddBtn) {
+      quickAddBtn.addEventListener('click', () => {
+        Sounds.playClick();
+        window.openQuickAddModal('taboo', () => {
+          if (CustomCreator.getCustomWords().length > 0) {
+            selectedCategories = ["📝 كروتي المخصصة"];
+          }
+          setupCategorySelection();
+        });
+      });
+    }
 
     document.getElementById('btn-start-taboo-setup').addEventListener('click', () => {
       Sounds.playClick();
