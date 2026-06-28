@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalsa-cache-v12';
+const CACHE_NAME = 'jalsa-cache-v13';
 const ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const ASSETS = [
   './js/games/truth_or_dare.js',
   './js/games/five_seconds.js',
   './js/games/wolvesville.js',
+  './js/games/pictionary.js',
   './js/main.js'
 ];
 
