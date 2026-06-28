@@ -359,13 +359,13 @@ const PictionaryGame = (() => {
     chosenCats.forEach(cat => {
       if (cat === "📝 كروتي المخصصة") {
         wordList = wordList.concat(CustomCreator.getCustomWords());
-      } else if (WordBank.charades[cat]) {
-        wordList = wordList.concat(WordBank.charades[cat]);
+      } else if (WordBank.charades[cat] && WordBank.charades[cat].words) {
+        wordList = wordList.concat(WordBank.charades[cat].words);
       }
     });
 
     if (wordList.length === 0) {
-      wordList = WordBank.charades["حيوانات وأشياء"];
+      wordList = WordBank.charades["حيوانات وأشياء"].words;
     }
 
     const unplayedWords = WordHistoryManager.getUnplayedItems('pictionary', 'all_words', wordList);
