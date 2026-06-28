@@ -57,12 +57,13 @@ const PictionaryGame = (() => {
         .pictionary-canvas-container {
           position: relative;
           width: 100%;
-          aspect-ratio: 4 / 3;
+          height: 48vh;
+          min-height: 350px;
           background: #110e20;
           border: 2px solid rgba(255, 255, 255, 0.08);
           border-radius: 20px;
           overflow: hidden;
-          margin-bottom: 15px;
+          margin-bottom: 8px;
           touch-action: none;
           box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
@@ -78,9 +79,9 @@ const PictionaryGame = (() => {
           gap: 10px;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
+          margin-bottom: 10px;
           background: rgba(255, 255, 255, 0.02);
-          padding: 12px;
+          padding: 8px;
           border-radius: 16px;
           border: 1px solid rgba(255, 255, 255, 0.05);
         }
@@ -436,7 +437,7 @@ const PictionaryGame = (() => {
     const artist = gamePlayers[currentPlayerIndex];
 
     containerEl.innerHTML = `
-      <div class="game-card animate-fade-in" style="padding: 15px;">
+      <div class="game-card animate-fade-in" style="padding: 10px; max-width: 550px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; direction: rtl;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 1.5rem;">🎨</span>
