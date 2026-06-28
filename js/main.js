@@ -591,6 +591,7 @@ const App = (() => {
       cardTod: document.getElementById('card-tod'),
       cardFiveSeconds: document.getElementById('card-five-seconds'),
       cardWolves: document.getElementById('card-wolves'),
+      cardPictionary: document.getElementById('card-pictionary'),
       
       // Gameplay container
       gameplayContainer: document.getElementById('gameplay-container')
@@ -826,6 +827,19 @@ const App = (() => {
       activeGame = WolvesvilleGame;
       WolvesvilleGame.init(players, elements.gameplayContainer, exitGameplay);
     });
+
+    if (elements.cardPictionary) {
+      elements.cardPictionary.addEventListener('click', () => {
+        Sounds.playClick();
+        if (players.length < 2) {
+          showCustomAlert("تتطلب لعبة الرسم لاعبين على الأقل.");
+          return;
+        }
+        showScreen('screen-gameplay');
+        activeGame = PictionaryGame;
+        PictionaryGame.init(players, elements.gameplayContainer, exitGameplay);
+      });
+    }
   };
 
   const exitGameplay = (targetScreen = 'screen-games') => {
