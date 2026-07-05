@@ -471,7 +471,7 @@ window.openQuickAddModal = (gameId, onModalClose) => {
     `;
   }
   else if (gameId === 'truth_or_dare') {
-    title = "إضافة كرت صراحة أو تحدي 🍾";
+    title = "إضافة كرت صراحة أو تحدي 🤫";
     helperText = "اختر نوع الكرت (صراحة أو تحدي) ثم اكتب المحتوى.";
     btnText = "إضافة الكرت ➕";
     listTitle = "الكروت المضافة حالياً:";

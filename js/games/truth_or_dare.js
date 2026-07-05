@@ -41,12 +41,12 @@ const TruthOrDareGame = (() => {
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
         <div class="game-header">
-          <span class="game-badge">صراحة أو تحدي 🍾</span>
+          <span class="game-badge">صراحة أو تحدي 🤫</span>
           <h2>إعداد اللعبة ⚙️</h2>
         </div>
 
         <div class="bomb-intro-box">
-          <span class="bomb-large-emoji">🍾</span>
+          <span class="bomb-large-emoji">🤫</span>
           <p class="intro-text">اختر الصراحة لتكشف أسرارك أو التحدي لتنفيذ مهام مجنونة ومضحكة أمام أصدقائك!</p>
         </div>
 
@@ -188,7 +188,7 @@ const TruthOrDareGame = (() => {
     containerEl.innerHTML = `
       <div class="game-card animate-fade-in text-center">
         <div class="game-header">
-          <span class="game-badge">حقيقة أم جرأة 🍾</span>
+          <span class="game-badge">حقيقة أم جرأة 🤫</span>
           <h2>دور اللاعب التالي</h2>
         </div>
 
