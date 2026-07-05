@@ -16029,3 +16029,42 @@ const WordBank = {
     "اذكر 3 حيوانات تعيش في الصحراء 🐪 (تحدي 60)"
   ]
 };
+
+// Global word utilities
+window.cleanWord = function(word) {
+  if (!word || typeof word !== 'string') return word;
+  return word.replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
+window.simplifyWord = function(word) {
+  if (!word || typeof word !== 'string') return word;
+  
+  // 1. Strip parentheses and anything inside them
+  let clean = window.cleanWord(word);
+  
+  // 2. Compound terms to preserve in Jalsa Games
+  const compoundPrefixes = [
+    "كرة قدم", "كرة سلة", "كرة يد", "كرة طائرة", "كرة الطاولة",
+    "طبيب أسنان", "طبيب بيطري", "طبيب عيون", "رائد فضاء", "عامل نظافة", "عامل بناء",
+    "ساعي بريد", "مضيف طيران", "مذيع تلفزيوني", "مدرب رياضي", "نحات تماثيل", "مصمم أزياء",
+    "عازف جيتار", "عازف بيانو", "راقص باليه", "ساحر سيرك", "مخرج أفلام", "حارس مرمى", "حارس غابة",
+    "حارس أمن", "سائق تاكسي", "عامل دليفري", "مهندس ديكور", "مصلح ساعات", "صائغ مجوهرات",
+    "كابتن سفينة", "رجل إطفاء", "رجل أمن", "رجل المرور",
+    "توم وجيري", "ريال مدريد", "برج خليفة", "سور الصين", "برج إيفل", "تمثال الحرية", "تاج محل",
+    "البحر الأحمر", "البحر المتوسط", "المحيط الأطلسي", "المحيط الهادي", "نهر النيل", "نهر الفرات",
+    "نهر دجلة", "جبال الألب", "جبال الهملايا", "الولايات المتحدة", "المملكة المتحدة", "المملكة العربية",
+    "دولة الإمارات", "جوز الهند", "تمر هندي", "فول سوداني", "أبو العريف", "صلصة طماطم", "بطاطس مقلية",
+    "بطاطا حلوة", "تفاح أخضر", "تفاح أحمر", "عنب أخضر", "عنب أحمر", "مشمش مجفف", "نعناع مجفف"
+  ];
+  
+  // Check if the cleaned word starts with any of the compound prefixes
+  for (const prefix of compoundPrefixes) {
+    if (clean.startsWith(prefix)) {
+      return prefix;
+    }
+  }
+  
+  // Otherwise, return the first word
+  const parts = clean.split(' ');
+  return parts[0] || clean;
+};

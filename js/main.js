@@ -438,7 +438,8 @@ const GameSettings = (() => {
   const DEFAULTS = {
     undercover: { spies: 1, undercovers: 1 },
     bomb: { minTime: 20, maxTime: 40 },
-    charades: { time: 60, rounds: 3 },
+    charades: { time: 60, rounds: 3, simplifyWords: true },
+    pictionary: { time: 60, rounds: 3, simplifyWords: true },
     taboo: { time: 60, rounds: 3 },
     five_seconds: { time: 5, rounds: 2 },
     would_you_rather: { rounds: 2 },

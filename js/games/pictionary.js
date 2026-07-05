@@ -11,6 +11,7 @@ const PictionaryGame = (() => {
   let currentRound = 1;
   let maxRounds = 3;
   let roundDuration = 60; // in seconds
+  let simplifyWords = true;
   let currentPlayerIndex = 0;
   let timerInterval = null;
   let timerVal = 0;
@@ -45,9 +46,10 @@ const PictionaryGame = (() => {
     selectedCategories = ["عشوائي"];
 
     // Load saved settings if any
-    const savedSettings = window.GameSettings ? window.GameSettings.get('pictionary') : { time: 60, rounds: 3 };
+    const savedSettings = window.GameSettings ? window.GameSettings.get('pictionary') : { time: 60, rounds: 3, simplifyWords: true };
     roundDuration = savedSettings ? savedSettings.time : 60;
     maxRounds = savedSettings ? savedSettings.rounds : 3;
+    simplifyWords = savedSettings && savedSettings.simplifyWords !== undefined ? savedSettings.simplifyWords : true;
 
     // Inject styles dynamically if not already injected
     if (!document.getElementById('pictionary-styles')) {
@@ -204,13 +206,22 @@ const PictionaryGame = (() => {
               <button class="btn btn-outline" id="btn-pic-time-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
             </div>
           </div>
-          <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <span style="font-size: 0.9rem; color: #fff;">عدد الجولات:</span>
             <div style="display: flex; gap: 5px; align-items: center;">
               <button class="btn btn-outline" id="btn-pic-rounds-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
               <span id="lbl-pic-rounds" style="font-weight: 700; min-width: 20px; text-align: center;">${maxRounds}</span>
               <button class="btn btn-outline" id="btn-pic-rounds-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
             </div>
+          </div>
+          <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.9rem; color: #fff;">نمط الكلمة الواحدة 📝:</span>
+            <label class="switch-container" style="display: inline-flex; position: relative; width: 44px; height: 24px; cursor: pointer; align-items: center;">
+              <input type="checkbox" id="chk-pictionary-simplify" ${simplifyWords !== false ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+              <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${simplifyWords !== false ? 'var(--primary)' : 'rgba(255,255,255,0.15)'}; transition: .3s; border-radius: 34px; border: 1px solid rgba(255,255,255,0.25);">
+                <span class="switch-knob" style="position: absolute; content: ''; height: 16px; width: 16px; left: ${simplifyWords !== false ? '22px' : '4px'}; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
+              </span>
+            </label>
           </div>
         </div>
 
@@ -333,11 +344,30 @@ const PictionaryGame = (() => {
       Sounds.playClick();
       startNewTurn();
     });
+
+    const chkSimplify = containerEl.querySelector('#chk-pictionary-simplify');
+    if (chkSimplify) {
+      chkSimplify.addEventListener('change', () => {
+        Sounds.playClick();
+        simplifyWords = chkSimplify.checked;
+        saveSettings();
+        
+        const slider = chkSimplify.nextElementSibling;
+        const knob = slider.querySelector('.switch-knob');
+        if (chkSimplify.checked) {
+          slider.style.backgroundColor = 'var(--primary)';
+          knob.style.left = '22px';
+        } else {
+          slider.style.backgroundColor = 'rgba(255,255,255,0.15)';
+          knob.style.left = '4px';
+        }
+      });
+    }
   };
 
   const saveSettings = () => {
     if (window.GameSettings) {
-      window.GameSettings.set('pictionary', { time: roundDuration, rounds: maxRounds });
+      window.GameSettings.set('pictionary', { time: roundDuration, rounds: maxRounds, simplifyWords: simplifyWords });
     }
   };
 
@@ -369,8 +399,17 @@ const PictionaryGame = (() => {
       wordList = WordBank.charades["حيوانات وأشياء"].words;
     }
 
-    const unplayedWords = WordHistoryManager.getUnplayedItems('pictionary', 'all_words', wordList);
+    const shouldSimplify = simplifyWords !== false;
+
+    const processedWords = Array.from(new Set(wordList.map(w => {
+      return shouldSimplify ? window.simplifyWord(w) : window.cleanWord(w);
+    })));
+
+    const unplayedWords = WordHistoryManager.getUnplayedItems('pictionary', 'all_words', processedWords);
     currentWord = unplayedWords[Math.floor(Math.random() * unplayedWords.length)];
+    if (!currentWord && processedWords.length > 0) {
+      currentWord = processedWords[Math.floor(Math.random() * processedWords.length)];
+    }
     WordHistoryManager.markAsPlayed('pictionary', 'all_words', currentWord);
 
     // Show ready screen

@@ -131,7 +131,7 @@ const CharadesGame = (() => {
 
         <!-- Settings Box -->
         ${(() => {
-          const settings = window.GameSettings ? window.GameSettings.get('charades') : { time: 60, rounds: 3 };
+          const settings = window.GameSettings ? window.GameSettings.get('charades') : { time: 60, rounds: 3, simplifyWords: true };
           return `
             <div class="settings-box" style="margin-top: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
               <h4 style="margin-bottom: 12px; color: var(--accent);">⚙️ إعدادات اللعبة:</h4>
@@ -143,13 +143,22 @@ const CharadesGame = (() => {
                   <button class="btn btn-outline" id="btn-charades-time-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
                 </div>
               </div>
-              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <span style="font-size: 0.9rem; color: #fff;">عدد الجولات:</span>
                 <div style="display: flex; gap: 5px; align-items: center;">
                   <button class="btn btn-outline" id="btn-charades-rounds-dec" style="padding: 2px 10px; font-size: 0.8rem;">-</button>
                   <span id="lbl-charades-rounds" style="font-weight: 700; min-width: 20px; text-align: center;">${settings.rounds}</span>
                   <button class="btn btn-outline" id="btn-charades-rounds-inc" style="padding: 2px 10px; font-size: 0.8rem;">+</button>
                 </div>
+              </div>
+              <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: #fff;">نمط الكلمة الواحدة 📝:</span>
+                <label class="switch-container" style="display: inline-flex; position: relative; width: 44px; height: 24px; cursor: pointer; align-items: center;">
+                  <input type="checkbox" id="chk-charades-simplify" ${settings.simplifyWords !== false ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                  <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${settings.simplifyWords !== false ? 'var(--primary)' : 'rgba(255,255,255,0.15)'}; transition: .3s; border-radius: 34px; border: 1px solid rgba(255,255,255,0.25);">
+                    <span class="switch-knob" style="position: absolute; content: ''; height: 16px; width: 16px; left: ${settings.simplifyWords !== false ? '22px' : '4px'}; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
+                  </span>
+                </label>
               </div>
             </div>
           `;
@@ -297,6 +306,26 @@ const CharadesGame = (() => {
         if (lbl) lbl.innerText = s.rounds;
       }
     });
+
+    const chkSimplify = document.getElementById('chk-charades-simplify');
+    if (chkSimplify) {
+      chkSimplify.addEventListener('change', () => {
+        Sounds.playClick();
+        const s = window.GameSettings.get('charades');
+        s.simplifyWords = chkSimplify.checked;
+        window.GameSettings.set('charades', s);
+        
+        const slider = chkSimplify.nextElementSibling;
+        const knob = slider.querySelector('.switch-knob');
+        if (chkSimplify.checked) {
+          slider.style.backgroundColor = 'var(--primary)';
+          knob.style.left = '22px';
+        } else {
+          slider.style.backgroundColor = 'rgba(255,255,255,0.15)';
+          knob.style.left = '4px';
+        }
+      });
+    }
   };
 
   const prepareWords = () => {
@@ -324,8 +353,15 @@ const CharadesGame = (() => {
       sourceWords = WordBank.charades["فواكه وخضروات"].words;
     }
     
-    const unplayedWords = WordHistoryManager.getUnplayedItems('charades', 'all_words', sourceWords);
-    wordList = [...unplayedWords].sort(() => Math.random() - 0.5);
+    const settings = window.GameSettings.get('charades');
+    const shouldSimplify = settings.simplifyWords !== false;
+
+    const processedWords = Array.from(new Set(sourceWords.map(w => {
+      return shouldSimplify ? window.simplifyWord(w) : window.cleanWord(w);
+    })));
+
+    const unplayedWords = WordHistoryManager.getUnplayedItems('charades', 'all_words', processedWords);
+    wordList = [...(unplayedWords.length > 0 ? unplayedWords : processedWords)].sort(() => Math.random() - 0.5);
     currentWordIndex = 0;
   };
 
