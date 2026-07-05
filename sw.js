@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalsa-cache-v14';
+const CACHE_NAME = 'jalsa-cache-v15';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './icon.png',
   './icon-192.png',
   './icon-512.png',
+  './logo.png',
   './screenshot-mobile.png',
   './screenshot-desktop.png',
   './js/sounds.js',
