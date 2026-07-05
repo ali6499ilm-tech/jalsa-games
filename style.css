@@ -245,21 +245,75 @@ p {
   flex: 1;
   padding: 40px 0;
 }
-.logo-glow-ring {
+.custom-logo-container {
   position: relative;
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+  width: 140px;
+  height: 140px;
+  margin-bottom: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 25px;
-  box-shadow: 0 8px 25px rgba(255, 94, 98, 0.25);
-  border: 2px solid rgba(255, 255, 255, 0.2);
 }
-.logo-icon {
-  font-size: 4.5rem;
+.logo-center-phone {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(0, 242, 254, 0.3), inset 0 0 12px rgba(255, 255, 255, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  z-index: 2;
+}
+.phone-inner {
+  font-size: 2.4rem;
+}
+.pass-arrows {
+  position: absolute;
+  font-size: 0.95rem;
+  bottom: 8px;
+  background: rgba(7, 5, 15, 0.85);
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: bold;
+}
+.logo-surrounding-icon {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  background: rgba(22, 17, 43, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+  transition: transform 0.3s ease;
+}
+.logo-surrounding-icon:hover {
+  transform: scale(1.1);
+}
+.icon-spy {
+  top: 5px;
+  left: 5px;
+}
+.icon-wolf {
+  top: 5px;
+  right: 5px;
+}
+.icon-group {
+  bottom: 5px;
+  left: 5px;
+}
+.icon-mask {
+  bottom: 5px;
+  right: 5px;
 }
 .welcome-logo-box h1 {
   font-size: 3rem;
