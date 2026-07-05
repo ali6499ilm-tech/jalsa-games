@@ -247,17 +247,16 @@ p {
 }
 .logo-glow-ring {
   position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 32px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 25px;
-  box-shadow: 0 12px 35px rgba(0, 242, 254, 0.3), 0 0 50px rgba(155, 81, 224, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.25);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  animation: logoPulse 3s infinite ease-in-out;
+  box-shadow: 0 8px 25px rgba(255, 94, 98, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 .logo-icon {
   font-size: 4.5rem;
