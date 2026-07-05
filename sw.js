@@ -1,12 +1,12 @@
-const CACHE_NAME = 'jalsa-cache-v15';
+const CACHE_NAME = 'jalsa-cache-v16';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.json',
-  './icon.jpg',
-  './icon-192.jpg',
-  './icon-512.jpg',
+  './icon.png',
+  './icon-192.png',
+  './icon-512.png',
   './logo.png',
   './screenshot-mobile.png',
   './screenshot-desktop.png',
