@@ -1,0 +1,16 @@
+معلومات هامة لنشر تطبيق "جلسة حماس" على متجر جوجل بلاي (Google Play Console)
+
+1. اسم الحزمة (Package Name):
+   com.ali6499ilmtech.jalsahamas
+
+2. رابط سياسة الخصوصية (Privacy Policy URL):
+   https://ali6499ilm-tech.github.io/jalsa-games/privacy-policy.html
+
+3. رابط إثبات الملكية (Digital Asset Links):
+   https://ali6499ilm-tech.github.io/jalsa-games/.well-known/assetlinks.json
+
+4. معرّف التوقيع الرقمي (SHA-256 Fingerprint):
+   6F:22:13:69:36:3F:11:37:DB:9C:CD:1F:46:76:EF:34:33:EB:99:61:00:2C:D5:B2:1A:DA:A8:26:E0:1E:15:D6
+
+ملاحظة هامة:
+يرجى الاحتفاظ بملف التوقيع الرقمي (Keystore) المرفق من PWABuilder وكلمة المرور الخاصة به في مكان آمن جداً مثل Google Drive. لا تفقده وإلا لن تتمكن من تحديث التطبيق أبداً!
