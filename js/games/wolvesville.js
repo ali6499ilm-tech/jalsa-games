@@ -282,7 +282,7 @@ const WolvesvilleGame = (() => {
                 if (showLock) {
                   controlHtml = `<span style="font-size: 0.85rem; color: #ffd700; font-weight: 700;">🔒 مغلق (برو)</span>`;
                 } else {
-                  controlHtml = `<span class="player-mini-badge" style="background: #222; border: 1px solid #333; margin: 0; min-width: 60px; text-align: center;">${currentCount} لاعب</span>`;
+                  controlHtml = `<span class="player-mini-badge" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e0def4; display: inline-block; white-space: nowrap; margin: 0; min-width: 75px; text-align: center;">${currentCount} لاعب</span>`;
                 }
               } else {
                 // Manual Mode Selector Controls
