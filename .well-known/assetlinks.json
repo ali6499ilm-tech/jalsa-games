@@ -1,8 +1,8 @@
 [{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "io.github.ali6499ilm_tech.twa",
-        "sha256_cert_fingerprints": ["9E:86:30:22:76:37:F6:AC:D1:CB:E2:4B:B5:1C:8A:51:BB:E1:55:71:40:99:8D:C6:78:2B:2F:E6:E5:A9:D1:96"]
-      }
-    }]
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ali6499ilmtech.jalsahamas",
+    "sha256_cert_fingerprints": ["6F:22:13:69:36:3F:11:37:DB:9C:CD:1F:46:76:EF:34:33:EB:99:61:00:2C:D5:B2:1A:DA:A8:26:E0:1E:15:D6"]
+  }
+}]
